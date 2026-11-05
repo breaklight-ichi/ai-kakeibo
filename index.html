@@ -1,0 +1,2551 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIレシート家計簿</title>
+<meta name="description" content="レシートを撮るだけで、AIが家計簿に書き込むアプリ">
+<meta name="theme-color" content="#2f8a5f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948; --sgray:#a8a69f; --grid:#e1e0d9; --axis:#898781;
+  --bg:#f4f1ea; --card:#ffffff; --ink:#26302b; --sub:#66706a; --line:#e0dbd0;
+  --accent:#2f8a5f; --accent-ink:#ffffff; --soft:#e6f2ea; --warn:#c0563a; --hl:#fff1b8; --shadow:0 2px 10px rgba(30,50,40,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --sgray:#6b6a64; --grid:#2c2c2a; --axis:#898781;
+    --bg:#171b19; --card:#222826; --ink:#eef2ef; --sub:#a7b1ab; --line:#36403b;
+    --accent:#4fb985; --accent-ink:#10140f; --soft:#203a2c; --warn:#f08a6c; --hl:#5a4d16; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --sgray:#6b6a64; --grid:#2c2c2a; --axis:#898781;
+  --bg:#171b19; --card:#222826; --ink:#eef2ef; --sub:#a7b1ab; --line:#36403b;
+  --accent:#4fb985; --accent-ink:#10140f; --soft:#203a2c; --warn:#f08a6c; --hl:#5a4d16; --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:14px 16px 120px}
+header{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+.logo{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:21px;flex:none}
+h1{font-size:20px;margin:0}
+.tag{font-size:12px;color:var(--sub);margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+h2{font-size:17px;margin:0 0 8px}
+.muted{color:var(--sub);font-size:13px}
+.hidden{display:none!important}
+button{font-family:inherit}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer}
+.btn.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.warn{color:var(--warn)}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.menu button.wide{grid-column:1/-1;min-height:0;align-items:center;padding:7px 10px}
+.menu button.wide>span:last-child{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.menu button.wide .ic{font-size:20px}
+.menu button.wide .v{display:none}
+.rgrip{display:inline-block;cursor:grab;touch-action:none;color:var(--sgray);font-weight:800;letter-spacing:-2px;padding:2px 8px 2px 0;margin-right:2px;user-select:none}
+tr.rdrag{position:relative;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18);opacity:.95}tr.rdrag td{background:var(--hl)}
+tbody tr[data-rcat]{transition:transform .12s}tbody tr.rdrag{transition:none}
+.cren{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.keystate{font-weight:700;padding:6px 10px;border-radius:8px;margin:0 0 8px}.keystate.ok{background:var(--soft);color:var(--accent)}.keystate.ng{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+#keyCard details summary{cursor:pointer;color:var(--accent)}
+#keyCard table th,#keyCard table td{border:1px solid var(--line);padding:4px 6px;white-space:normal;position:static}
+.repl{background:none;border:0;color:var(--sub);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0}
+.incx{margin:4px 0 8px}.incx summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:14px;padding:4px 0}
+.exbtns{display:grid;gap:8px;margin-top:12px}
+.exbtns .btn{text-align:left;padding:10px 14px;font-size:15px}
+.exbtns .btn small{display:block;font-size:12px;font-weight:400;opacity:.8;margin-top:2px}
+.menu button{display:flex;gap:8px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:10px;cursor:pointer;font-family:inherit;box-shadow:var(--shadow);min-height:74px}
+.menu button .ic{font-size:24px;line-height:1.1}
+.menu button b{display:block;font-size:15px}
+.menu button small{display:block;font-size:11px;color:var(--sub);line-height:1.35}
+.menu button .v{display:block;font-size:13px;font-weight:800;color:var(--accent);margin-top:2px}
+.menu button.on{border-color:var(--accent);background:var(--soft)}
+.menu.compact{grid-template-columns:repeat(4,1fr);gap:6px}
+.menu.compact button{flex-direction:column;align-items:center;text-align:center;min-height:0;padding:6px 2px;gap:0;box-shadow:none}
+.menu.compact button b{font-size:12px}
+.menu.compact button small,.menu.compact button .v{display:none}
+html,body{height:100%}
+.wrap{display:flex;flex-direction:column;height:100dvh;padding-bottom:calc(104px + env(safe-area-inset-bottom))}
+#unavail,#jobBar{flex:none}
+#layout{flex:1;min-height:0;display:flex;flex-direction:column}
+#topArea{flex:none;display:flex;flex-direction:column;min-height:0;height:var(--topH,46%);background:color-mix(in srgb,var(--soft) 55%,var(--bg));border:1px solid var(--line);border-radius:18px;padding:8px}
+#topBody{overflow:auto;min-height:0;flex:1;-webkit-overflow-scrolling:touch;padding:2px}
+#split{flex:none;height:26px;display:flex;align-items:center;justify-content:center;cursor:row-resize;touch-action:none;position:relative}
+#split::before{content:"";position:absolute;left:4px;right:4px;top:50%;border-top:2px solid var(--line)}
+#split i{position:relative;width:56px;height:14px;border-radius:999px;background:var(--card);border:2px solid var(--sgray)}
+#split i::after{content:"";position:absolute;left:16px;right:16px;top:3px;height:2px;border-top:2px solid var(--sgray);border-bottom:2px solid var(--sgray)}
+#split.drag i{border-color:var(--accent);background:var(--soft)}
+#layout.fit #topArea{height:auto;max-height:calc(100% - 150px)}
+#layout.big #topBody{display:none}
+#layout.big #topArea{height:auto}
+#layout.topbig #topArea{height:auto;flex:1}
+#layout.topbig #bookArea{flex:none}
+#layout.topbig #bookArea .tablebox,#layout.topbig #sheetHint{display:none}
+#layout.topbig .bookhead{margin:0}
+.navbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex:none}
+.navbar b{flex:1;min-width:0;text-align:center;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+.hist button{border:0;background:none;font-size:18px;padding:6px 16px;color:var(--accent);cursor:pointer;line-height:1}
+.hist button+button{border-left:1px solid var(--line)}
+.hist button:disabled{color:var(--line);cursor:default}
+.sw{width:64px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--card);position:relative;cursor:pointer;flex:none;padding:0}
+.sw i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--sgray);transition:left .2s}
+.sw[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.sw[aria-checked="true"] i{left:33px;background:#fff}
+.sw::after{content:attr(data-label);position:absolute;right:70px;top:8px;font-size:11px;color:var(--sub);white-space:nowrap;pointer-events:none}
+@media (max-width:420px){.sw::after{display:none}}
+#bookArea{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:8px 10px;box-shadow:var(--shadow)}
+#bookArea .tablebox{flex:1;min-height:0;max-height:none}
+.bookhead{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.bookhead .bk{font-weight:800;font-size:16px;margin-right:auto;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ym{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:3px 8px;font:inherit;font-weight:800;font-size:16px;color:var(--ink);cursor:pointer}
+.ym::after{content:" ▾";font-size:11px;color:var(--sub)}
+.bksum{margin-left:auto;font-size:15px}.bksum small{color:var(--sub);font-size:11px}
+.pop{position:fixed;z-index:25;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:50vh;overflow:auto;min-width:96px;padding:4px}
+.pop button{display:block;width:100%;border:0;background:none;font:inherit;font-size:16px;padding:8px 14px;text-align:right;cursor:pointer;border-radius:8px;color:var(--ink)}
+.pop button.on{background:var(--soft);color:var(--accent);font-weight:800}
+.pop button .d{font-size:10px;color:var(--s3);margin-right:6px}
+#pageArea .card:first-child{margin-top:0}
+@media (min-width:900px){
+  .wrap{max-width:1280px}
+  #layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px}
+  #topArea,#layout.topbig #topArea{height:auto;min-height:0}
+  #split{display:none}
+  #layout.topbig #bookArea .tablebox{display:block}
+  #layout.big{grid-template-columns:auto minmax(0,1fr)}
+  #layout.big .navbar b{display:none}
+  #bookArea{min-height:0}
+}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:12px;padding:6px 2px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;flex-direction:column;align-items:center;line-height:1.3}
+.tabs button span{font-size:18px}
+.tabs button.on{background:var(--soft);color:var(--accent);border-color:var(--accent)}
+.month{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.month b{font-size:18px}
+.month button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;width:42px;height:36px;font-size:18px;cursor:pointer}
+.total{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.total .big{font-size:28px;font-weight:800;letter-spacing:.01em}
+.bars{margin-top:8px}
+.bar{display:grid;grid-template-columns:5.5em 1fr auto;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bar .t{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.bar .t i.over{background:var(--warn)}
+.bar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-title{font-size:16px;font-weight:800;text-align:center;margin:2px 0 8px;letter-spacing:.05em}
+.tablebox{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px;max-height:70vh}
+table{border-collapse:collapse;font-size:13px;min-width:100%}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:5px 7px;white-space:nowrap}
+th{background:var(--soft);position:sticky;top:0;z-index:2;font-weight:700}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.day,th.day{position:sticky;left:0;background:var(--card);z-index:1;text-align:center}
+th.day{z-index:3;background:var(--soft)}
+tr.we td.day{color:var(--warn)}
+table.vert th.we{color:var(--warn)}table.vert th.today{background:var(--hl)}
+table.vert th small{font-weight:400;font-size:10px}
+table.vert td.vsum,table.vert th.vsum{background:linear-gradient(var(--soft),var(--soft)),var(--card)}
+table.vert td.day{text-align:left;white-space:nowrap}
+tr.today td{background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+td.cell{cursor:pointer}
+tr.bkrow{cursor:pointer}tr.bkrow:hover td{background:var(--soft)}
+td.cell:empty::after{content:"";}
+td.flash{animation:flash 2.4s ease-out}
+@keyframes flash{0%,40%{background:var(--hl)}}
+tfoot{position:sticky;bottom:0;z-index:1;background:var(--card)}
+tfoot td{font-weight:800;background:linear-gradient(var(--soft),var(--soft)),var(--card)}
+.rz{position:absolute;top:0;right:0;width:16px;height:100%;cursor:col-resize;touch-action:none;z-index:4}
+.rz::after{content:"";position:absolute;right:1px;top:18%;bottom:18%;border-left:3px solid var(--sgray);border-radius:2px;opacity:.45}
+.rz.on::after,.rz:hover::after{opacity:1;border-color:var(--accent)}
+table.fixedw th,table.fixedw td{overflow:hidden;text-overflow:ellipsis}
+table.fixedw input.bud{width:100%;min-width:0;box-sizing:border-box}
+.fsbtn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 8px;font:inherit;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer}
+#fullSheet{position:fixed;inset:0;z-index:40;background:var(--card);display:flex;flex-direction:column;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+.fsHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex:none}
+#fsBox{flex:1;min-height:0;overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
+#fsWrap{position:relative;overflow:hidden}
+#fsInner{position:absolute;left:0;top:0;transform-origin:0 0}
+#fsInner th,#fsInner td.day{position:static}
+#fsInner tfoot{position:static}
+#fsInner table{min-width:0}
+input.bud{width:6.5em;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit;font-weight:700;text-align:right;padding:2px 4px}
+.money .l{display:grid;grid-template-columns:1fr 9em;gap:8px;align-items:center;margin:6px 0;font-size:15px}
+.money input{text-align:right}
+.money .res{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--line);margin-top:8px;padding-top:8px;font-weight:800}
+.money .res .big{font-size:24px}
+.imgview{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:40;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:16px}
+.imgview img{max-width:100%;border-radius:8px;background:#fff}
+.imgview button{position:fixed;top:12px;right:12px}
+tfoot td.day{background:linear-gradient(var(--soft),var(--soft)),var(--card)}
+.dock{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.dock .in{max-width:720px;margin:0 auto;display:flex;gap:8px}
+.pick{position:relative;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;padding:13px 10px;font-size:16px;font-weight:800;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.pick.main{flex:1.6;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:200px}
+.paste{border:2px dashed var(--line);border-radius:12px;padding:10px;text-align:center;color:var(--sub);font-size:13px;margin-top:8px;outline:none}
+.paste:focus{border-color:var(--accent)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.panel{background:var(--bg);width:100%;max-width:720px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.thumb{max-width:100%;max-height:220px;border-radius:10px;display:block;margin:0 auto 10px;border:1px solid var(--line)}
+label.f{display:block;font-size:12px;color:var(--sub);margin:6px 0 2px}
+input.t,select.t{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:16px;background:var(--card);color:var(--ink);font-family:inherit;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.item{display:grid;grid-template-columns:1fr 6.5em;gap:6px;border-top:1px dashed var(--line);padding:8px 0}
+.item .cat{grid-column:1/2}
+.item .x{grid-column:2/3;justify-self:end}
+.diff{background:var(--soft);border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0}
+.diff.bad{background:color-mix(in srgb,var(--warn) 16%,var(--card))}
+.spin{width:38px;height:38px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:14px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.entry{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--line);padding:10px 0;cursor:pointer}
+.entry:first-child{border-top:0}
+.entry img{width:48px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);flex:none}
+.entry .ph{width:48px;height:64px;border-radius:6px;background:var(--soft);display:grid;place-items:center;flex:none;font-size:20px}
+.entry .b{flex:1;min-width:0}
+.entry .s{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry .a{font-weight:800;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 6px 4px 12px;font-size:14px}
+.chip button{border:0;background:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0 4px}
+.chip input{width:6em;border:0;background:transparent;color:var(--ink);font-size:13px;text-align:right;font-family:inherit}
+select.unset{border-color:var(--warn);color:var(--warn);font-weight:700}
+.foot{border-top:2px solid var(--line);margin-top:8px;padding-top:6px}
+.foot .l{display:grid;grid-template-columns:4.5em 1fr 6.5em;gap:6px;align-items:center;margin:5px 0}
+.foot .tot{display:flex;justify-content:space-between;font-size:18px;font-weight:800;border-top:1px solid var(--line);padding-top:6px;margin-top:6px}
+.err{color:var(--warn);font-size:14px;margin:6px 0}
+.note{background:var(--soft);border-radius:12px;padding:10px 12px;font-size:13px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-size:11px;fill:var(--axis);font-family:inherit}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .base{stroke:var(--axis);stroke-width:1;opacity:.5}
+.chart [data-tip]{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);margin:4px 0 8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.legend i.ln{height:3px;border-radius:2px;vertical-align:2px;width:14px}
+.tip{position:fixed;z-index:35;background:var(--ink);color:var(--bg);font-size:13px;padding:6px 10px;border-radius:8px;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow)}
+#splash{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s;cursor:pointer}
+#splash.out{opacity:0;pointer-events:none}
+#splash .sp-c{text-align:center;animation:spIn .8s ease-out both}
+#splash .sp-ic{font-size:56px;line-height:1}
+#splash .sp-s{margin:14px 0 2px;font-size:16px;font-weight:700;color:var(--sub);letter-spacing:.12em}
+#splash .sp-t{margin:0;font-size:40px;font-weight:900;color:var(--accent);letter-spacing:.06em}
+#splash .sp-b{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom));margin:0;font-size:20px;font-weight:800;letter-spacing:.32em;color:var(--ink);animation:spIn 1s .3s ease-out both}
+@keyframes spIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#splash .sp-c,#splash .sp-b{animation:none}}
+.chk{display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer}.chk input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--accent)}
+.paychips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.paychips button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
+.paychips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+body.fsL table{font-size:16px}body.fsXL table{font-size:19px;font-weight:600}
+body.fsL th,body.fsL td{padding:6px 8px}body.fsXL th,body.fsXL td{padding:7px 9px}
+body.fsL #topBody,body.fsL .panel{zoom:1.12}body.fsXL #topBody,body.fsXL .panel{zoom:1.25}
+body.fsL .bookhead,body.fsXL .bookhead{font-size:1.1em}body.fsXL .bksum b{font-size:19px}
+body.fsXL .navbar b{font-size:17px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;z-index:30;box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+
+  <p id="unavail" class="note hidden"></p>
+  <div class="card hidden" id="jobBar"></div>
+
+
+<div id="layout">
+  <div id="topArea">
+  <div class="navbar">
+    <div class="hist"><button id="histBack" aria-label="戻る">◀</button><button id="histFwd" aria-label="進む">▶</button></div>
+    <b id="pageTitle"></b>
+    <button class="sw" id="bigSw" role="switch" aria-checked="false" aria-label="家計簿を大きくする"><i></i></button>
+  </div>
+  <div id="topBody">
+  <div id="menuArea"><div class="menu" id="menu"></div></div>
+  <div id="pageArea">
+
+  <section id="tab-money" class="hidden">
+    <div class="card money" id="money">
+      <h2>今月のお金</h2>
+      <div class="bars" id="bars" style="margin-bottom:12px"></div>
+      <div class="l"><span>前月からの繰越<br><span class="muted" id="carryNote"></span></span><input class="t" id="mCarry" inputmode="numeric"></div>
+      <div class="l"><span>給与（手取り）</span><input class="t" id="mSalary" inputmode="numeric" placeholder="0"></div>
+      <div class="l"><span>その他の収入<br><span class="muted">副収入・手当など</span></span><input class="t" id="mOther" inputmode="numeric" placeholder="0"></div>
+      <details class="incx" id="incX"><summary>＋ 収入の内訳をくわしく入れる（提出用の家計表に載ります）</summary><div id="incXBody"></div></details>
+      <div class="l hidden" id="mBankInc"><span>通帳からの収入<br><span class="muted">🏦通帳で直せます</span></span><b id="mBankIncV" style="text-align:right"></b></div>
+      <div class="l"><span>貯金（毎月、先に取り分ける）<br><span class="muted">残りから最初に差し引きます</span></span><input class="t" id="mSave" inputmode="numeric" placeholder="0"></div>
+      <div class="l"><span>支出合計</span><b id="mSpend" style="text-align:right"></b></div>
+      <div class="res"><span id="mLeftLbl">残り（翌月へ繰越）</span><span class="big" id="mLeft"></span></div>
+      <p class="muted" style="margin:6px 0 0" id="mYear"></p>
+      <label class="chk" style="margin-top:12px"><input type="checkbox" id="noCarry"> <span><b>前の月の残りを翌月に繰り越す</b><br><span class="muted" style="font-size:12px">外すと、どの月も繰越0円から始まり、その月だけのお金の動きを確かめられます（手で入れた繰越はそのまま使います）。</span></span></label>
+    </div>  </section>
+  <section id="tab-wallet" class="hidden">
+    <div class="card money">
+      <h2>👛 財布の残高合わせ</h2>
+      <div id="wBody"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn sm main" id="wBtn"></button></div>
+      <p class="muted" style="margin:6px 0 0;font-size:12px">現金の支出＝支払いが「現金」か空欄のレシート・手入力（固定費と通帳の引き落としは除く）。自販機などレシートのない出費は、数えて合わせたときの差が「使途不明金」になります。</p>
+    </div>  </section>
+  <section id="tab-loan" class="hidden">
+    <div class="card money">
+      <h2>🤝 仮想金額<span class="muted" style="font-weight:400;font-size:13px">（知人・身内とのお金のやり取り）</span></h2>
+      <p class="muted" style="margin-top:0">貸した・立て替えた・借りたお金を、支出合計とは別に数えます。＋はあなたが受け取る分、−はあなたが払う分です。</p>
+      <div class="res" style="border-top:0;margin-top:0;padding-top:0"><span>いまの仮想金額</span><span class="big" id="lnSum"></span></div>
+      <p class="muted" style="margin:0 0 6px;text-align:right" id="lnSub"></p>
+      <div id="lnList"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn sm main" id="lnAdd">＋ やり取りを記録</button></div>
+      <div style="border-top:1px dashed var(--line);margin-top:10px;padding-top:10px">
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;font-weight:700"><input type="checkbox" id="lnTable" style="margin-top:4px">家計簿の表に「貸し借り」の項目として載せる<span class="muted" style="font-weight:400">（有料オプション予定）</span></label>
+        <p class="muted" style="margin:4px 0 0;font-size:12px">オンにすると、貸した・返したお金は「貸し借り」の欄に＋で、返してもらった・借りたお金は−で入り、支出合計と項目の合計が合います。個人再生などの手続き中の方は、身内とのお金の貸し借りについて担当の弁護士・司法書士に相談しておくと安心です。</p>
+      </div>
+    </div>  </section>
+
+
+  <section id="tab-list" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">今月の記録</h2>
+        <div class="row"><button class="btn sm" id="addManual">＋ 手で入力</button><button class="btn sm" id="csv">CSVで保存</button></div></div>
+      <div id="entries"></div>
+    </div>
+    <div class="card">
+      <h2>レシート画像の保存</h2>
+      <p class="muted" style="margin-top:0" id="imgInfo">確認中…</p>
+      <div class="row"><button class="btn sm warn" id="delMonthImgs">この月のレシート画像を消す（記録は残す）</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm warn" id="delAllImgs">🗑 すべての月のレシート画像を消す（記録は残す）</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm warn" id="delAllRecs">🗑 レシートの記録と画像をすべて消す（リセット）</button></div>
+    </div>
+  </section>
+
+  <section id="tab-export" class="hidden">
+    <div class="card">
+      <h2>📤 書き出し（Excel・PDF）</h2>
+      <p class="muted" style="margin-top:0">家計簿をファイルにして保存します。パソコンのExcelで開いたり、PDFで印刷・保管したりできます。</p>
+      <label class="f">書き出す範囲</label>
+      <select class="t" id="exRange"><option value="m">表示している月（1か月）</option><option value="y">表示している年（1月〜12月）</option></select>
+      <div class="exbtns">
+        <button class="btn main" id="exXlsx">📗 Excelで保存（.xlsx）<small>家計簿の表・明細・収入と繰越を、シートに分けて保存</small></button>
+        <button class="btn main" id="exForm">📝 提出用の家計表（PDF）⭐<small>収入・副収入・繰越・費目ごとの支出・残りを1か月1枚に。印刷してそのまま使える形</small></button>
+        <button class="btn" id="exPdf">📕 PDFで保存<small>家計簿の表と今月のお金を、印刷できる形で保存</small></button>
+        <button class="btn" id="exCsv">📄 CSVで保存<small>明細だけの簡単な表（ほかの家計簿アプリにも読み込める）</small></button>
+      </div>
+      <p class="muted" id="exStatus" style="margin:8px 0 0"></p>
+    </div>
+  </section>
+
+  <section id="tab-price" class="hidden">
+    <div class="card">
+      <h2>💴 商品の値段をしらべる</h2>
+      <p class="muted" style="margin-top:0">商品名を入れると、今までどの店でいくらで買ったかが分かります。</p>
+      <input class="t" id="pq" placeholder="例：卵、牛乳">
+      <div id="pres"></div>
+    </div>
+  </section>
+
+  <section id="tab-chart" class="hidden">
+    <div class="card"><h2 id="rvH">🤖 AIのふり返り</h2><div id="rvBody"></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm main" id="rvBtn">この月をふり返ってもらう</button></div></div>
+    <div class="card chart"><h2>月ごとの支出と収入</h2><div class="legend" id="lgMonth"></div><div id="chMonth"></div><p class="muted" style="margin:4px 0 0">棒を押すと金額が出ます。</p></div>
+    <div class="card chart"><h2>費目ごとの移り変わり（6か月）</h2><div class="legend" id="lgStack"></div><div id="chStack"></div></div>
+    <div class="card chart"><h2 id="hBreak">今月の費目の内訳</h2><div id="chBreak"></div></div>
+    <div class="card chart"><h2>今月のペース（先月とくらべる）</h2><div class="legend" id="lgPace"></div><div id="chPace"></div></div>
+  </section>
+
+  <section id="tab-bank" class="hidden">
+    <div class="card">
+      <h2>🏦 通帳</h2>
+      <div class="row" id="bkChips" style="margin-bottom:6px"></div>
+      <div id="bankEmpty"><p class="muted">銀行の口座を追加して、記帳した通帳のページ（またはネットバンキングの明細）を撮ると、AIが1行ずつ読み取ります。光熱費などの引き落としは家計簿に、ATM引き出しは財布に、給与は収入につなげられます。</p><button class="btn sm main" id="bankAdd2">＋ 口座を追加</button></div>
+      <div id="bankBody" class="hidden">
+        <div class="total"><span class="muted" id="bankBalNote"></span><span class="big" id="bankBal"></span></div>
+        <p style="margin:2px 0 6px;font-size:14px" id="bankMonth"></p>
+        <label class="chk" style="margin:4px 0 4px"><input type="checkbox" id="bankOnChk"> <span><b id="bankOnLbl"></b><br><span class="muted" style="font-size:12px" id="bankOnSub"></span></span></label>
+        <div class="paychips" id="bankMonths" style="margin-bottom:10px"></div>
+        <div class="row" style="margin-bottom:10px">
+          <label class="pick main" style="flex:1"><span>📷 通帳を撮る</span><input type="file" accept="image/*" capture="environment" id="bankCam"></label>
+          <label class="pick" style="flex:1"><span>🖼 スクショから</span><input type="file" accept="image/*" id="bankPic"></label>
+        </div>
+        <div id="bankRows"></div>
+        <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn sm" id="bankRename">口座の名前・削除</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-tpl" class="hidden">
+    <div class="card" id="keyCard">
+      <h2>🔑 AIの設定（Gemini）</h2>
+      <p style="margin-top:0">このアプリのAIは、Googleの<b>Gemini</b>を使います。使う人ごとに、Googleから無料でもらえる「鍵」（APIキー）が必要です。最初に1回だけ設定すれば、あとはそのまま使えます。</p>
+      <p class="keystate" id="keyState"></p>
+      <details id="keyHow"><summary><b>鍵のもらい方（3分ほど）</b></summary>
+        <ol style="padding-left:20px;margin:8px 0">
+          <li>下のボタンでGoogle AI Studioを開き、ふだん使っているGoogleアカウントでログインします。</li>
+          <li>はじめての人は、利用規約に同意すると鍵が自動で1つ作られます。表示されない時は「APIキーを作成」（Create API key）を押します。</li>
+          <li>鍵の横のコピーボタンを押してコピーします。</li>
+          <li>この画面に戻り、下の欄に貼り付けて「保存して試す」を押します。</li>
+        </ol>
+        <a class="btn sm main" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Google AI Studio を開く ↗</a>
+      </details>
+      <label class="f">鍵を貼り付ける</label>
+      <div class="row"><input class="t" id="keyInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ここに貼り付け" style="flex:1"><button class="btn sm" id="keyEye" type="button">表示</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn main" id="keySave">保存して試す</button><button class="btn sm warn hidden" id="keyDel">この端末から鍵を消す</button></div>
+      <p class="muted" id="keyMsg" style="margin:6px 0 0"></p>
+      <label class="f">AIの選び方</label>
+      <select class="t" id="aiModel"><option value="fast">速さ優先（おすすめ）</option><option value="accurate">正確さ優先（読み間違いが多いとき）</option></select>
+      <details style="margin-top:10px"><summary><b>料金とレシートの扱い</b></summary>
+        <table style="margin-top:8px;font-size:13px"><tr><th></th><th>無料のまま</th><th>支払い設定をした場合</th></tr>
+          <tr><td>料金</td><td>0円</td><td>1回あたり数円ほど（Googleから請求）</td></tr>
+          <tr><td>回数</td><td>1日の回数に上限あり</td><td>たくさん使える</td></tr>
+          <tr><td>送った画像</td><td>GoogleのAIの改善に使われることがあります</td><td>改善には使われません</td></tr></table>
+        <p class="muted" style="font-size:13px">AIに送るのは、読み取る瞬間のレシート・通帳・家計簿の画像と、ふり返りのときの集計だけです。このアプリの運営者には、画像も料金も届きません。通帳など見られたくない部分がある時は、写す範囲を必要な行だけにしてください。</p>
+      </details>
+      <details style="margin-top:6px"><summary><b>鍵の扱いについて</b></summary>
+        <ul style="padding-left:20px;font-size:13px;margin:8px 0">
+          <li>鍵はこの端末の中にだけ保存し、Google（Gemini）以外には送りません。バックアップのファイルにも入りません。</li>
+          <li>鍵は暗証番号と同じです。人に見せたり、画面の写真を載せたりしないでください。</li>
+          <li>もれたかもと思ったら、Google AI Studio で鍵を削除して作り直してください。</li>
+        </ul>
+      </details>
+    </div>
+    <div class="card">
+      <h2>⭐ 有料オプション</h2>
+      <p class="muted" style="margin-top:0">テスト版のあいだは、ここで自由に使えます（本番では購入した人だけが使える予定です）。</p>
+      <label class="chk"><input type="checkbox" id="plusBatch"> <span><b>まとめて読み取り</b><br><span class="muted" style="font-size:12px">「🖼 写真から」でレシートの写真を2枚以上選んで、裏でまとめて読む</span></span></label>
+      <label class="chk"><input type="checkbox" id="plusPay"> <span><b>支払い方法を選んで入れる</b><br><span class="muted" style="font-size:12px">現金・カードなどを一覧から選べる（いくつでも選べる）</span></span></label>
+      <label class="chk"><input type="checkbox" id="plusForm"> <span><b>提出用の家計表（PDF）</b><br><span class="muted" style="font-size:12px">手元の家計簿用紙と同じ欄で、収入・支出・繰越を1か月1枚の家計表にして印刷できる</span></span></label>
+      <label class="chk"><input type="checkbox" id="plusLoan"> <span><b>貸し借りを家計簿の表に載せる</b><br><span class="muted" style="font-size:12px">「🤝 貸し借り」の画面のチェックと同じです</span></span></label>
+    </div>
+    <div class="card">
+      <h2>📱 画面</h2>
+      <label class="f">文字の大きさ</label>
+      <select class="t" id="uiFont"><option value="">ふつう</option><option value="L">大きめ（表の数字も大きく）</option><option value="XL">特大（表の数字をもっと大きく）</option></select>
+      <label class="f">家計簿の表の向き（日付 × 費目の表のとき）</label>
+      <select class="t" id="uiVert"><option value="">横表示（費目が横に並ぶ）</option><option value="1">縦表示（費目が縦に並ぶ・日付が横）</option></select>
+      <label class="f">家計簿の表の列の幅</label>
+      <p class="muted" style="margin:0 0 6px;font-size:12px">表の見出しの列と列の境目（｜）を指で左右に動かすと、その両どなりの2列の幅だけが変わります。ほかの列はそのままです。</p>
+      <div class="row"><button class="btn sm" id="colEven">列の幅を均等にそろえる</button><button class="btn sm" id="colReset">元の幅に戻す</button></div>
+      <label class="f">上の機能の部分の高さ</label>
+      <select class="t" id="uiTop"><option value="s">小さめ（家計簿を広く）</option><option value="m">ふつう</option><option value="l">大きめ（機能を広く）</option></select>
+      <p class="muted" style="margin:6px 0 0">家計簿とボタンの間の境界線を指で上下に動かすと、広さを自由に変えられます（ボタン・スイッチ・戻る/進むを押すと、ここで選んだ高さに戻ります。アプリを開いたときは、ボタンが全部見える位置から始まります）。右上のスイッチは、ボタンの画面では家計簿を、機能の画面では機能の部分を大きくします。横に広い画面（タブレットなど）では左右に並びます。</p>
+    </div>
+    <div class="card">
+      <h2>📐 家計簿の形と費目（読み込み）</h2>
+      <p class="muted" style="margin-top:0">いつも使っている家計簿（ノート・アプリ・Excelなど）の<b>スクリーンショットや写真</b>を読み込むと、AIが同じ形の表を画面に作ります。</p>
+      <div class="row">
+        <label class="pick main" style="flex:1"><span>📷 撮る</span><input type="file" accept="image/*" capture="environment" id="tplCam"></label>
+        <label class="pick" style="flex:1.4"><span>🖼 スクショ・写真から</span><input type="file" accept="image/*" id="tplFile"></label>
+      </div>
+      <div class="paste" id="tplPaste" contenteditable="true">ここを長押し／クリックして画像を貼り付け（ボタンが動かないとき）</div>
+      <div id="tplStatus"></div>
+    </div>
+    <div class="card">
+      <h2>いまの家計簿の形と費目</h2>
+      <label class="f">表の名前</label>
+      <input class="t" id="tplTitle">
+      <label class="f">表の形</label>
+      <select class="t" id="tplLayout">
+        <option value="daily">日付 × 費目の表（1か月を1枚で）</option>
+        <option value="list">1件ずつ書く表（出納帳タイプ）</option>
+        <option value="summary">費目ごとの予算と実績</option>
+      </select>
+      <label class="f">費目（右の数字は月の予算。空欄なら予算なし。名前を押すと変えられます）</label>
+      <div class="chips" id="cats"></div>
+      <div class="row"><input class="t" id="newCat" placeholder="費目を追加（例：ペット）" style="flex:1"><button class="btn sm" id="addCat">追加</button></div>
+      <div class="row" style="margin-top:12px"><button class="btn sm warn" id="resetTpl">最初のひな形に戻す</button></div>
+    </div>
+    <div class="card">
+      <h2>🔁 毎月の固定費</h2>
+      <p class="muted" style="margin-top:0">家賃・光熱費・スマホ代・サブスクなど、レシートが出ない毎月の支払いを登録すると、その日になったら自動で書き込みます。金額が月ごとに変わるもの（電気代など）は、書き込まれた記録を押して直せます。</p>
+      <div id="fixedList"></div>
+      <div class="grid2" style="margin-top:8px">
+        <div><label class="f">名前</label><input class="t" id="fxName" placeholder="例：家賃"></div>
+        <div><label class="f">金額</label><input class="t" id="fxAmt" inputmode="numeric" placeholder="円"></div>
+        <div><label class="f">費目</label><select class="t" id="fxCat"></select></div>
+        <div><label class="f">毎月の日</label><select class="t" id="fxDay"></select></div>
+      </div>
+      <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn sm main" id="fxAdd">固定費を登録</button></div>
+    </div>
+    <div class="card">
+      <h2>💾 バックアップ</h2>
+      <p class="muted" style="margin-top:0">記録はこの端末の中だけにあります。スマホをなくしたり機種を変えたりすると消えてしまうので、ときどきファイルに書き出しておきましょう。新しいスマホでそのファイルを読み込めば元に戻ります。</p>
+      <label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="bkImg" checked>レシート画像も入れる（ファイルが大きくなります）</label>
+      <div class="row" style="margin-top:8px">
+        <button class="btn sm main" id="bkOut">バックアップを書き出す</button>
+        <label class="btn sm" style="position:relative;overflow:hidden">バックアップから戻す<input type="file" accept=".json,application/json" id="bkIn" style="position:absolute;inset:0;opacity:0"></label>
+      </div>
+      <div id="bkStatus"></div>
+    </div>
+    <div class="card">
+      <h2>データについて</h2>
+      <p class="muted" style="margin:0">記録はこの端末の中だけに保存されます。AIに送るのは読み取る瞬間の画像と、ふり返りのときの集計だけで、あなたの鍵でGoogle（Gemini）へ直接送ります。運営者には届きません。</p>
+      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 1</p>
+      <div class="row" style="margin-top:8px"><button class="btn sm warn" id="wipe">記録をすべて消す</button></div>
+    </div>
+  </section>
+  </div>
+  </div>
+  </div>
+  <div id="split" role="separator" aria-label="境界線（上下に動かすと広さが変わります）"><i></i></div>
+  <div id="bookArea">
+    <div class="bookhead">
+      <span class="bk" id="sheetTitle"></span>
+      <button class="ym" id="ymY"></button><button class="ym" id="ymM"></button>
+      <button class="fsbtn" id="fsOpen" title="表の全体を1画面で見る">⛶ 全体</button>
+      <span class="bksum"><small>つかった金額</small> <b id="sum"></b></span>
+    </div>
+    <div class="tablebox" id="sheet"></div>
+    <p class="muted" id="sheetHint" style="margin:4px 0 0;font-size:12px"></p>
+  </div>
+</div>
+</div>
+
+<div class="dock">
+  <div class="in">
+    <label class="pick main"><span>📷 レシートを撮る<small style="display:block;font-size:10px;font-weight:600;opacity:.8">1枚ずつ・すぐ読む</small></span><input type="file" accept="image/*" capture="environment" id="camFile"></label>
+    <label class="pick"><span>🖼 写真から<small style="display:block;font-size:10px;font-weight:600;opacity:.75">1枚ならすぐ・複数は裏でまとめて</small></span><input type="file" accept="image/*" id="picFile" multiple></label>
+  </div>
+</div>
+
+<div class="pop hidden" id="ymPop"></div>
+<div id="splash" role="img" aria-label="breaklight AI家計簿"><div class="sp-c"><div class="sp-ic">🧾</div><p class="sp-s">レシートを読み込む</p><h1 class="sp-t">AI家計簿</h1></div><p class="sp-b">breaklight</p></div>
+<div id="fullSheet" class="hidden"><div class="fsHead"><b id="fsTitle"></b><button class="btn sm main" id="fsClose">✕ 閉じる</button></div><div id="fsBox"><div id="fsWrap"><div id="fsInner"></div></div></div><p class="muted" id="fsHint" style="margin:6px 0 0;font-size:12px;text-align:center"></p></div>
+<div class="overlay hidden" id="ov"><div class="panel" id="panel"></div></div>
+<div class="toast hidden" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const yen = n => "¥" + Math.round(Number(n) || 0).toLocaleString("ja-JP");
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const pad = n => String(n).padStart(2, "0");
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+
+const DEFAULT_TPL = {
+  title: "家計簿", layout: "daily",
+  categories: ["食費", "外食", "日用品", "交通費", "衣服・美容", "趣味・娯楽", "医療", "その他"].map(name => ({ name, budget: null })),
+  columns: [
+    { label: "日付", field: "date" }, { label: "店名", field: "store" }, { label: "品目", field: "item" },
+    { label: "費目", field: "category" }, { label: "金額", field: "amount" }
+  ]
+};
+const FIELDS = { date: "日付", store: "店名", item: "品目", category: "費目", amount: "金額", payment: "支払い", memo: "メモ", other: "（空欄）" };
+
+let state = { tpl: structuredClone(DEFAULT_TPL), entries: [], dict: {}, income: {}, fixed: [], fixedDone: {}, review: {}, loans: [], banks: [], bankDict: {}, wallet: null, jobs: [], pending: [], jobTotal: 0 };
+const normName = t => String(t || "").normalize("NFKC").replace(/\s+/g, "").toLowerCase();
+let month = todayStr().slice(0, 7);
+let tab = "home";
+let sample = null;
+let flashKey = null;
+
+// ===== 保存（この端末の中だけ） =====
+const store = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    try {
+      const r = indexedDB.open("ai-kakeibo", 2);
+      r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv"); if (!db.objectStoreNames.contains("img")) db.createObjectStore("img"); };
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    } catch (e) { rej(e); }
+  }));
+  return {
+    async get() {
+      try {
+        const db = await open();
+        return await new Promise((res, rej) => { const q = db.transaction("kv").objectStore("kv").get("state"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+      } catch (e) { try { return JSON.parse(localStorage.getItem("ai-kakeibo") || "null"); } catch (_) { return null; } }
+    },
+    async set(v) {
+      try {
+        const db = await open();
+        await new Promise((res, rej) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(v, "state"); t.oncomplete = res; t.onerror = () => rej(t.error); });
+      } catch (e) { try { localStorage.setItem("ai-kakeibo", JSON.stringify(v)); } catch (_) {} }
+    },
+    // レシート画像（読める大きさ）は記録とは別に保存
+    async putImg(id, blob) {
+      try { const db = await open(); await new Promise((res, rej) => { const t = db.transaction("img", "readwrite"); t.objectStore("img").put(blob, id); t.oncomplete = res; t.onerror = () => rej(t.error); }); return true; } catch (e) { return false; }
+    },
+    async getImg(id) {
+      try { const db = await open(); return await new Promise((res, rej) => { const q = db.transaction("img").objectStore("img").get(id); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); } catch (e) { return null; }
+    },
+    async delImgs(ids) {
+      try { const db = await open(); await new Promise((res, rej) => { const t = db.transaction("img", "readwrite"); ids.forEach(id => t.objectStore("img").delete(id)); t.oncomplete = res; t.onerror = () => rej(t.error); }); } catch (e) {}
+    }
+  };
+})();
+const save = () => store.set(JSON.parse(JSON.stringify(state)));
+
+// ===== AI =====
+const ERR = {
+  no_key: "AIの鍵がまだ設定されていません。⚙設定の「🔑 AIの設定」から設定してください。",
+  bad_key: "鍵が正しくないようです。⚙設定の「🔑 AIの設定」で、もう一度コピーして貼り付けてください。",
+  key_denied: "この鍵ではGeminiを使えませんでした。Google AI Studio で新しい鍵を作って貼り付けてください。",
+  offline: "インターネットにつながっていないようです。電波の良い所でもう一度お試しください。",
+  model: "AIの準備ができませんでした。少し時間をおいてお試しください。",
+  busy: "AIが混み合っています。少し待ってからもう一度お試しください。",
+  slow: "AIがとても混み合っています。少し時間をおいてお試しください。",
+  rate_limited: "今日の無料の回数を使い切ったか、AIが混み合っています。少し待つか、明日もう一度お試しください。",
+  image_rejected: "この画像は読み込めませんでした。別の写真でお試しください。",
+  invalid_json: "うまく読み取れませんでした。もう一度お試しください。",
+  refused: "この画像は読み取れませんでした。別の画像でお試しください。"
+};
+const errMsg = e => ERR[e && e.code] || "AIでうまく読み取れませんでした。明るい場所で、レシート全体が入るように撮り直してください。";
+
+// ===== Gemini（使う人の鍵で、端末から直接Googleに送る。運営者には何も届かない） =====
+const GEM = {
+  KEY: "kakeibo-gemini-key",
+  MODELS: { fast: ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.6-flash"], accurate: ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"] },
+  last: null, trail: [], dead: {},
+  get() { try { return localStorage.getItem(this.KEY) || ""; } catch (e) { return ""; } },
+  set(k) { try { k ? localStorage.setItem(this.KEY, k) : localStorage.removeItem(this.KEY); return true; } catch (e) { return false; } },
+  models() { return this.MODELS[(state.ui && state.ui.aiModel) || "fast"] || this.MODELS.fast; }
+};
+const b64 = b => new Promise((ok, ng) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = () => ng(r.error); r.readAsDataURL(b); });
+async function geminiOnce(m, key, body, onText) {
+  const ctl = new AbortController(); let gotFirst = false;
+  const guard = setTimeout(() => { if (!gotFirst) ctl.abort(); }, 90000);
+  const t0 = Date.now(); let tFirst = 0;
+  try {
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:streamGenerateContent?alt=sse`, {
+        method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body)
+      });
+    } catch (e) { return { err: ctl.signal.aborted ? { code: "slow" } : { code: "offline" } }; }
+    if (!res.ok) return { status: res.status, errText: await res.text().catch(() => "") };
+    let text = "", buf = "", blocked = false;
+    const take = line => {
+      if (!line.startsWith("data:")) return;
+      try {
+        const d = JSON.parse(line.slice(5)), c = d.candidates && d.candidates[0];
+        if (!c) { if (d.promptFeedback && d.promptFeedback.blockReason) blocked = true; return; }
+        (c.content && c.content.parts || []).forEach(pt => { if (pt.text && !pt.thought) { if (!tFirst) { tFirst = Date.now(); gotFirst = true; } text += pt.text; } });
+        if (onText) onText(text);
+      } catch (e) {}
+    };
+    if (res.body && res.body.getReader) {
+      const rd = res.body.getReader(), dec = new TextDecoder();
+      try { for (;;) { const { done, value } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true }); const ls = buf.split(/\r?\n/); buf = ls.pop(); ls.forEach(take); } }
+      catch (e) { return { err: ctl.signal.aborted ? { code: "slow" } : { code: "offline" } }; }
+      take(buf);
+    } else (await res.text()).split(/\r?\n/).forEach(take);
+    if (!text) return { err: { code: blocked ? "refused" : "refused" } };
+    GEM.last = { model: m, wait: Math.round(((tFirst || Date.now()) - t0) / 1000), write: Math.round((Date.now() - (tFirst || Date.now())) / 1000) };
+    return { text };
+  } finally { clearTimeout(guard); }
+}
+async function geminiCall(body, onText) {
+  const key = GEM.get(); if (!key) throw { code: "no_key" };
+  let last = null; GEM.trail = [];
+  for (const m of GEM.models().filter((x, i, l) => !GEM.dead[x] || l.every(y => GEM.dead[y]))) {
+    let r = await geminiOnce(m, key, body, onText);
+    if (r.status === 400 && body.generationConfig && body.generationConfig.thinkingConfig && !/API_KEY_INVALID|API key not valid/i.test(r.errText || "")) {
+      const b2 = JSON.parse(JSON.stringify(body)); delete b2.generationConfig.thinkingConfig; r = await geminiOnce(m, key, b2, onText);
+    }
+    if (r.text) return r.text;
+    const msg = ((r.errText || "").match(/"message":\s*"([^"]{0,80})/) || [])[1] || "";
+    GEM.trail.push(`${m.replace("gemini-", "")}:${r.status || (r.err && r.err.code)}${msg ? " " + msg : ""}`);
+    if (r.err) { if (r.err.code === "slow") { last = r.err; continue; } throw r.err; }
+    const t = r.errText || "";
+    if (r.status === 404) { GEM.dead[m] = 1; last = { code: "model" }; continue; }
+    if (r.status === 429) { last = { code: "rate_limited" }; continue; }
+    if (r.status === 503 || r.status === 500) { last = { code: "busy" }; continue; }
+    if (/API_KEY_INVALID|API key not valid|invalid api key/i.test(t)) throw { code: "bad_key" };
+    if (r.status === 401 || r.status === 403) throw { code: "key_denied" };
+    if (r.status === 400) throw { code: "image_rejected" };
+    last = { code: "busy" };
+  }
+  throw last || { code: "busy" };
+}
+// 試作版（Claude）と同じ使い方: sample(文, {onText}) → {text}、sample.json(文, {images}) → JSON
+async function gemText(prompt, opts = {}) {
+  const text = await geminiCall({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingLevel: "low" } } }, opts.onText ? t => opts.onText({ text: t }) : null);
+  return { text };
+}
+gemText.json = async (prompt, opts = {}) => {
+  const parts = [{ text: prompt }];
+  for (const im of [].concat(opts.images || [])) parts.push({ inline_data: { mime_type: im.type || "image/jpeg", data: await b64(im) } });
+  const txt = await geminiCall({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", thinkingConfig: { thinkingLevel: "low" } } });
+  try { return JSON.parse(txt); } catch (e) { const m = txt.match(/[\[{][\s\S]*[\]}]/); if (m) { try { return JSON.parse(m[0]); } catch (e2) {} } throw { code: "invalid_json" }; }
+};
+gemText.test = async () => !!(await geminiCall({ contents: [{ role: "user", parts: [{ text: "「OK」とだけ返してください。" }] }] }));
+function refreshAI() {
+  sample = GEM.get() ? gemText : null;
+  $("unavail").innerHTML = sample ? "" : `※ AIの鍵（Gemini）がまだ設定されていません。レシートを読むには、最初に1回だけ設定してください（手で入力する機能はそのまま使えます）。<br><button class="btn sm main" id="goKeyTop" style="margin-top:6px">🔑 AIの設定を開く</button>`;
+  $("unavail").classList.toggle("hidden", !!sample);
+  if ($("goKeyTop")) $("goKeyTop").onclick = () => openKeySettings();
+  if (typeof keyStatus === "function") keyStatus();
+}
+setTimeout(refreshAI, 0);
+
+// 画像を小さくして送る（長辺 maxPx）
+const OPEN_ERR = "この写真を開けませんでした。カメラの保存形式が「HEIF（高効率）」になっていると開けないことがあります。カメラの設定で「HEIF」をオフにして撮り直すか、スクリーンショットでお試しください。";
+const isImg = f => f && (!f.type || f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(f.name || ""));
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = async () => {
+      try { // 予備：別の方法で開く
+        const bm = await createImageBitmap(file);
+        const c = document.createElement("canvas"); c.width = bm.width; c.height = bm.height; c.getContext("2d").drawImage(bm, 0, 0);
+        const im2 = new Image(); im2.onload = () => res(im2); im2.onerror = () => rej(new Error(OPEN_ERR)); im2.src = c.toDataURL("image/jpeg", .92);
+      } catch (e) { rej(new Error(OPEN_ERR)); }
+    };
+    im.src = url;
+  });
+}
+function shrink(im, maxPx, q) {
+  const s = Math.min(1, maxPx / Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
+  c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+  return { canvas: c, toBlob: () => new Promise(r => c.toBlob(r, "image/jpeg", q)), dataUrl: () => c.toDataURL("image/jpeg", q) };
+}
+
+const catNames = () => state.tpl.categories.map(c => c.name);
+const UNSET = "未設定", EXTRA = "税・袋", LOANCAT = "貸し借り";
+const fixCat = c => (catNames().includes(c) || c === EXTRA || c === LOANCAT) ? c : UNSET;
+// レシート1枚の行（品目＋レジ袋＋外税の消費税）
+const extraLines = e => [
+  ...(e.bag && e.bag.has && e.bag.price ? [{ name: "レジ袋", price: e.bag.price, cat: EXTRA }] : []),
+  ...(e.tax && !e.tax.incl && e.tax.amount ? [{ name: "消費税", price: e.tax.amount, cat: EXTRA }] : [])
+];
+const lines = e => [...e.items, ...extraLines(e)];
+const entrySum = e => lines(e).reduce((a, it) => a + (Number(it.price) || 0), 0);
+const sheetCats = T => [...state.tpl.categories, ...(T.byCat[UNSET] ? [{ name: UNSET, budget: null }] : []), ...(T.byCat[EXTRA] ? [{ name: EXTRA, budget: null }] : []), ...(T.byCat[LOANCAT] ? [{ name: LOANCAT, budget: null }] : [])];
+// 仮想金額を表に載せる設定のとき、貸し借りを「貸し借り」項目の記録として足す（手元から出たお金は＋、戻ったお金は−）
+const LOAN_LABEL = { lend: "貸した・立て替えた", back: "返してもらった", borrow: "借りた・払ってもらった", repay: "返した" };
+const LOAN_SIGN = { lend: 1, back: -1, borrow: -1, repay: 1 };
+const loanEntries = () => !state.loanInTable ? [] : (state.loans || []).map(l => ({ id: "loan-" + l.id, loan: l.who, date: l.date, store: l.who, items: [{ name: `${LOAN_LABEL[l.type]}（${l.who}）${l.memo ? "・" + l.memo : ""}`, price: LOAN_SIGN[l.type] * l.amount, cat: LOANCAT }], pay: "", created: 0 }));
+// 通帳：口座ごと・月ごとに「家計簿に反映する／しない」
+const bankOn = (bid, ym) => !(state.bankOff || {})[bid + "|" + ym];
+const allE = () => state.entries.filter(e => !e.bank || bankOn(e.bank, e.date.slice(0, 7))).concat(loanEntries());
+// 通帳の入金のうち「収入に足す」にした分（反映する月だけ）
+function bankInc(ym) {
+  let v = 0;
+  (state.banks || []).forEach(b => (b.rows || []).forEach(r => { if (r.income && r.in && r.date.slice(0, 7) === ym && bankOn(b.id, ym)) v += r.in; }));
+  return v;
+}
+const bankIncMonths = () => { const s = new Set(); (state.banks || []).forEach(b => (b.rows || []).forEach(r => { if (r.income && r.in) s.add(r.date.slice(0, 7)); })); return [...s]; };
+// 以前の版は通帳の給与を「給与（手取り）」の欄に直接足していたので、一度だけ取り除く
+function migrateBank() {
+  if (state.bankMig) return; state.bankMig = 1;
+  (state.banks || []).forEach(b => (b.rows || []).forEach(r => {
+    if (!r.income || !r.in) return; const x = (state.income || {})[r.date.slice(0, 7)]; if (!x) return;
+    x.salary = Math.max(0, (x.salary || 0) - r.in);
+  }));
+}
+
+async function readReceipt(blob, single) {
+  const cats = catNames();
+  const prompt = `添付の画像は買い物のレシートです。家計簿に書き込むために内容を読み取ってください。${single ? "\nこの画像は、何枚か並べて撮った写真から1枚分を切り抜いたものです。真ん中に大きく写っている1枚だけを読み、端に少し写り込んだとなりのレシートは無視して、receipts には1件だけ入れてください。" : ""}
+1枚の画像に複数のレシートが並んで写っていることがあります。その場合はレシートごとに分けて、左上から順に receipts に入れてください（品目を別のレシートと混ぜないこと）。
+ネットショップの購入履歴・注文確認メール・カード明細などのスクリーンショットのこともあります。その場合は注文（お店）ごとに1件として、同じ形で読み取ってください（store はショップ名、送料は品目「送料」として入れる）。
+費目は次の中から選んでください: ${cats.map(c => `「${c}」`).join("、")}\n費目の決め方: まず「何の商品か」を推測してから費目を選ぶ。7割くらいの自信があれば費目を選び、そのとき確信がなければ guess を true にする。何の商品か本当に見当がつかないときだけ "未設定" にする。
+ペット関係の商品（ペットフード、おやつ、猫砂、ペットシーツ、首輪、ペット用シャンプー、動物病院など）は、日用品・食費にはしない。費目の中に「ペット」を含むものがあればそれを、なければ「その他」があれば「その他」を、どちらもなければ "未設定" を選ぶ。
+ルール:
+- date は購入日を YYYY-MM-DD で。年が書かれていない・読めない場合は今日（${todayStr()}）の年を使う。日付がまったく読めなければ ${todayStr()}。
+- store は店名（支店名は短く添えてよい）。
+- items は品目ごとに1行。raw にはレシートに印字されたままの商品名を入れる。
+- name は「何の商品か」が分かる日本語に直す。スーパーのレシートは「メーカー名・ブランド名＋商品名の略＋規格」をカタカナや略字で書くことが多いので、知識を使って読み解く。店名も手がかりにする（例: ロピアなどのスーパー、ドラッグストア、ホームセンター）。
+  例: 「トマル コダマ ミックス」→ トマルは鶏卵の会社、コダマ＝小玉、ミックス＝サイズ混合 →「卵 小玉ミックス（トマル）」・食費
+      「ギュウニュウ」→「牛乳」、「ﾒｲｼﾞｵｲｼｲｷﾞｭｳﾆｭｳ」→「明治おいしい牛乳」、「Bﾄｲﾚｯﾄﾍﾟｰﾊﾟｰ」→「トイレットペーパー」・日用品
+- price はその商品に実際に払った金額（数量×単価なら掛けた後、値引きがあれば引いた後）。
+- 「値引」「割引」「%引」「クーポン」などの行は、商品として items に入れない。日本のレシートでは値引きの行は、値引きされる商品のすぐ下に書かれているので、その商品の price から引き、disc に引いた金額（正の数）を入れる。
+- 小計全体への値引き（どの商品か決められないクーポン・セット割など）は items に入れず、bill_discount に引いた金額（正の数）を入れる。ポイントで支払った分は値引きではないので bill_discount に入れない。
+- レジ袋は商品として items に入れない。bag に {"has":true,"price":袋の金額} を入れる。レジ袋の行がなければ {"has":false,"price":0}。
+- 消費税は商品として items に入れない。tax に {"amount":税額,"included":true/false} を入れる。外税（合計の上に「消費税」「外税」として足されている）は included:false、内税（「内消費税」「(内税対象 … 消費税 …)」など合計に含まれている）は included:true。複数の税率の税額は合計する。書かれていなければ {"amount":0,"included":true}。
+- total はレシートの合計（お支払い金額）。お預かり・お釣りは入れない。
+- payment は支払い方法（現金・クレジット・電子マネー・QRなど。不明なら空文字）。
+- レシートではない、または読めない画像なら {"error":"理由"} だけを返す。一部のレシートだけ読めない場合は、読めたものだけを返す。
+次のJSONだけを返してください（レシートが1枚でも receipts の配列にする）:
+{"receipts":[{"date":"2026-10-31","store":"○○スーパー","items":[{"raw":"ｷﾞｭｳﾆｭｳ","name":"牛乳","price":178,"disc":20,"cat":"${cats[0]}","guess":false}],"bill_discount":0,"bag":{"has":false,"price":0},"tax":{"amount":13,"included":true},"total":178,"payment":"現金"}]}`;
+  const res = await sample.json(prompt, { images: [blob] });
+  if (!res || res.error) throw { code: "refused", message: res && res.error };
+  const list = Array.isArray(res.receipts) ? res.receipts : Array.isArray(res) ? res : [res];
+  if (!list.length) throw { code: "refused", message: "レシートが見つかりませんでした" };
+  return list.map(r => ({
+    date: /^\d{4}-\d{2}-\d{2}$/.test(r.date || "") ? r.date : todayStr(),
+    store: r.store || "",
+    ...splitExtras(fixDiscounts(r), r),
+    total: Math.round(Number(r.total) || 0),
+    pay: r.payment || ""
+  }));
+}
+
+// レジ袋・消費税が品目に混ざっていたら取り出す
+function splitExtras(items, r) {
+  const bag = { has: !!(r.bag && r.bag.has), price: Math.max(0, Math.round(Number(r.bag && r.bag.price) || 0)) };
+  const tax = { amount: Math.max(0, Math.round(Number(r.tax && r.tax.amount) || 0)), incl: !(r.tax && r.tax.included === false) };
+  const rest = [];
+  for (const it of items) {
+    if (/レジ袋|ﾚｼﾞ袋|袋代|レジバッグ/.test(it.name)) { bag.has = true; bag.price += it.price; continue; }
+    if (/消費税|外税|内税/.test(it.name)) { if (!tax.amount) { tax.amount = it.price; tax.incl = false; } continue; }
+    rest.push(it);
+  }
+  return { items: rest, bag, tax };
+}
+
+// 値引きを商品にまとめる（値引きだけの行を残さない）
+const DISC_RE = /値引|割引|引き|%引|％引|クーポン|ディスカウント|discount/i;
+function fixDiscounts(r) {
+  const out = [];
+  for (const it of (Array.isArray(r.items) ? r.items : [])) {
+    const name = String(it.name || "品目"), price = Math.round(Number(it.price) || 0), disc = Math.abs(Math.round(Number(it.disc) || 0));
+    if ((price < 0 || (DISC_RE.test(name) && price <= 0)) && out.length) {
+      const prev = out[out.length - 1]; const d = Math.min(Math.abs(price), prev.price);
+      prev.price -= d; prev.disc = (prev.disc || 0) + d;
+      continue;
+    }
+    const raw = String(it.raw || "").trim();
+    const o = { name, price, cat: fixCat(it.cat), ...(disc ? { disc } : {}), ...(raw && raw !== name ? { raw } : {}), ...(it.guess && fixCat(it.cat) !== UNSET ? { guess: true } : {}) };
+    const hit = state.dict && state.dict[normName(raw || name)];
+    if (hit && (catNames().includes(hit.cat))) { o.name = hit.name || o.name; o.cat = hit.cat; delete o.guess; o.known = true; }
+    out.push(o);
+  }
+  // 全体への値引きは、金額の割合で各商品に分ける
+  let bd = Math.abs(Math.round(Number(r.bill_discount) || 0));
+  const base = out.reduce((a, it) => a + Math.max(0, it.price), 0);
+  if (bd && base) {
+    bd = Math.min(bd, base); let rest = bd;
+    out.forEach(it => { if (it.price <= 0) return; const d = Math.floor(bd * it.price / base); it.price -= d; it.disc = (it.disc || 0) + d; rest -= d; });
+    const big = out.slice().sort((a, b) => b.price - a.price)[0]; if (big && rest) { big.price -= rest; big.disc = (big.disc || 0) + rest; }
+  }
+  return out;
+}
+
+async function readTemplate(blob) {
+  const prompt = `添付の画像は、ある人がいつも使っている家計簿のひな形（テンプレート）のスクリーンショット、またはノートや紙の家計簿をカメラで撮った写真です。写真は斜め・影・手書き・記入済みでもかまいません。書き込まれている金額は無視して、表の形と見出しだけを読んでください。
+この家計簿と同じ形の表をアプリの画面に作りたいので、形を読み取ってください。
+- title: 表の題名（例「家計簿」「わが家の家計ノート」）。「10月」などの月や年は除く。なければ「家計簿」。
+- layout: 次の3つから一番近いもの
+  "daily" = 行が日付（1日〜31日）、列が費目（食費・日用品など）の表
+  "list" = 1行に1件ずつ「日付・内容・金額…」を書いていく表（出納帳・こづかい帳タイプ）
+  "summary" = 費目ごとに予算と使った額を書く表
+- categories: 表に出てくる費目（支出の分類）を表の順番で。同じ名前の欄が何行もあるとき（例「保険料：」が3行）は、その行数だけ同じ名前で入れる。収入の欄、「翌月への繰り越し」、「合計」の行は除く。budget は予算が数字で書かれていればその数（円）、なければ null。費目が書かれていない表なら一般的な費目を6〜8個入れる。
+- incomes: 収入の欄がある表なら、その種別名を表の順番で文字の配列に（例 ["前月からの繰り越し","給与（申立人）","給与（配偶者）","児童手当","その他"]）。「（　）」のように名前が空欄の行と「収入合計」は除く。「その他：」のような書き方は「その他」にする。収入の欄がなければ []。
+- columns: layout が "list" のときの列見出しを左から順に。field は次から選ぶ: date(日付) store(店名・支払先) item(品目・内容) category(費目) amount(金額・支出) payment(支払い方法) memo(メモ・備考) other(それ以外)。"list" 以外でも分かる範囲で入れてよい。
+- 表や家計簿らしいものが少しでも写っていれば必ず読み取る。家計簿とまったく関係のない画像のときだけ {"error":"理由"} を返す。
+次のJSONだけを返してください:
+{"title":"家計簿","layout":"daily","categories":[{"name":"食費","budget":30000},{"name":"日用品","budget":null}],"incomes":[],"columns":[{"label":"日付","field":"date"},{"label":"金額","field":"amount"}]}`;
+  const r = await sample.json(prompt, { images: [blob] });
+  if (!r || r.error) throw { code: "refused", message: r && r.error };
+  // 同じ名前の欄（例：用紙の「保険料：」が3行）は消さずに「保険料（2）」のように番号を付けて残す
+  const cnt = {};
+  const cats = (Array.isArray(r.categories) ? r.categories : []).map(c => ({
+    name: String((c && c.name) || "").replace(/[：:]\s*$/, "").trim().slice(0, 12), budget: c && Number(c.budget) > 0 ? Math.round(Number(c.budget)) : null
+  })).filter(c => c.name && !/繰り?越|^(収入|支出)?合計/.test(c.name)).map(c => { cnt[c.name] = (cnt[c.name] || 0) + 1; return cnt[c.name] > 1 ? { ...c, name: `${c.name}（${cnt[c.name]}）` } : c; });
+  if (!cats.some(c => c.name === "その他")) cats.push({ name: "その他", budget: null });
+  const cols = (Array.isArray(r.columns) ? r.columns : []).filter(c => c && c.label).map(c => ({ label: String(c.label).slice(0, 12), field: FIELDS[c.field] ? c.field : "other" }));
+  return {
+    title: String(r.title || "家計簿").slice(0, 24),
+    layout: ["daily", "list", "summary"].includes(r.layout) ? r.layout : "daily",
+    categories: cats,
+    incomes: (Array.isArray(r.incomes) ? r.incomes : []).map(x => String(x || "").replace(/[：:]\s*$/, "").trim().slice(0, 16)).filter(x => x && !/合計/.test(x)),
+    columns: cols.some(c => c.field === "amount") ? cols : DEFAULT_TPL.columns
+  };
+}
+
+// ===== 集計 =====
+const monthEntries = () => allE().filter(e => e.date.slice(0, 7) === month).sort((a, b) => a.date.localeCompare(b.date) || a.created - b.created);
+function totals() {
+  const byCat = {}, byDayCat = {};
+  let sum = 0;
+  for (const e of monthEntries()) for (const it of lines(e)) {
+    const c = fixCat(it.cat), d = +e.date.slice(8, 10);
+    byCat[c] = (byCat[c] || 0) + it.price;
+    byDayCat[d + "|" + c] = (byDayCat[d + "|" + c] || 0) + it.price;
+    sum += it.price;
+  }
+  return { sum, byCat, byDayCat };
+}
+
+// ===== 画面 =====
+// ===== 収入・繰越 =====
+const addMonth = (ym, k) => { const [y, m] = ym.split("-").map(Number); const d = new Date(y, m - 1 + k, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const spendOf = ym => allE().filter(e => e.date.slice(0, 7) === ym).reduce((a, e) => a + entrySum(e), 0);
+// 提出用の家計表によくある収入の欄（「給与（申立人）」は上の給与の欄、「その他」はその他の収入の欄）
+const INC_EXT = ["給与（配偶者）", "賞与（申立人）", "賞与（配偶者）", "自営収入（申立人）", "自営収入（配偶者）", "年金（申立人）", "年金（配偶者）", "生活保護", "児童手当", "他からの援助", "売電収入", "借入"];
+// 収入の欄：読み込んだひな形に収入の欄があればそれを、なければよくある形を使う
+const incKind = n => /繰り?越/.test(n) ? "carry" : /^その他/.test(n) ? "other" : "ext";
+function incomeNames() {
+  let L = (state.tpl.incomes || []).length ? state.tpl.incomes.slice() : ["前月からの繰り越し", "給与（申立人）", ...INC_EXT, "その他"];
+  if (!L.some(n => incKind(n) === "carry")) L.unshift("前月からの繰り越し");
+  // 上の「給与（手取り）」の欄を入れる行：申立人・本人の給与 → なければ最初の給与
+  let si = L.findIndex(n => /給与|給料/.test(n) && /申立人|本人/.test(n)); if (si < 0) si = L.findIndex(n => /給与|給料|収入/.test(n) && incKind(n) === "ext");
+  if (si < 0) { L.splice(1, 0, "給与（申立人）"); si = 1; }
+  if (!L.some(n => incKind(n) === "other")) L.push("その他");
+  return { L, salary: L[si] };
+}
+const extNames = () => { const { L, salary } = incomeNames(); return L.filter(n => n !== salary && incKind(n) === "ext"); };
+const extOf = ym => Object.values((((state.income || {})[ym] || {}).ext) || {}).reduce((a, v) => a + (Number(v) || 0), 0);
+const saveOf = ym => Math.max(0, Number(state.saving) || 0);
+const incOf = ym => { const x = (state.income || {})[ym] || {}; return (x.salary || 0) + (x.other || 0) + bankInc(ym) + extOf(ym); };
+function carryOf(ym) {
+  const months = [...allE().map(e => e.date.slice(0, 7)), ...Object.keys(state.income || {}), ...bankIncMonths()].filter(k => k < ym).sort();
+  const manual = ((state.income || {})[ym] || {}).carry;
+  if (manual !== undefined && manual !== null) return { v: manual, auto: false };
+  if (state.noCarry) return { v: 0, auto: true, off: true };
+  if (!months.length) return { v: 0, auto: true };
+  let cur = months[0], bal = 0;
+  while (cur < ym) {
+    const c = ((state.income || {})[cur] || {}).carry;
+    if (c !== undefined && c !== null) bal = c;
+    bal += incOf(cur) - saveOf(cur) - spendOf(cur);
+    cur = addMonth(cur, 1);
+  }
+  return { v: bal, auto: true };
+}
+function renderMoney() {
+  const x = (state.income || {})[month] || {}, c = carryOf(month), sp = spendOf(month);
+  const set = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v ? v.toLocaleString("ja-JP") : ""; };
+  if (document.activeElement !== $("mCarry")) $("mCarry").value = c.auto ? "" : c.v.toLocaleString("ja-JP");
+  $("mCarry").placeholder = c.v.toLocaleString("ja-JP");
+  $("carryNote").textContent = c.off ? "（繰り越さない設定）" : c.auto ? "（自動で計算）" : "（手で入力）";
+  $("noCarry").checked = !state.noCarry;
+  $("mLeftLbl").textContent = state.noCarry ? "残り（この月だけ）" : "残り（翌月へ繰越）";
+  if (document.activeElement !== $("mSave")) $("mSave").value = state.saving ? Number(state.saving).toLocaleString("ja-JP") : "";
+  set("mSalary", x.salary); set("mOther", x.other);
+  $("mSpend").textContent = "−" + yen(sp);
+  const left = c.v + incOf(month) - saveOf(month) - sp;
+  $("mLeft").textContent = (left < 0 ? "−" : "") + yen(Math.abs(left)); $("mLeft").style.color = left < 0 ? "var(--warn)" : "";
+  const y = month.slice(0, 4);
+  const ys = allE().filter(e => e.date.slice(0, 4) === y).reduce((a, e) => a + entrySum(e), 0);
+  const yi = [...new Set([...Object.keys(state.income || {}), ...bankIncMonths()])].filter(k => k.slice(0, 4) === y).reduce((a, k) => a + incOf(k), 0);
+  const ex = x.ext || {};
+  if (!$("incXBody").contains(document.activeElement)) $("incXBody").innerHTML = extNames().map(k => `<div class="l"><span>${k}</span><input class="t" inputmode="numeric" data-ext="${k}" value="${ex[k] ? Number(ex[k]).toLocaleString("ja-JP") : ""}" placeholder="0"></div>`).join("");
+  if (extOf(month)) $("incX").open = true;
+  const bi = bankInc(month); $("mBankInc").classList.toggle("hidden", !bi); $("mBankIncV").textContent = "+" + yen(bi);
+  const nm = new Set(allE().filter(e => e.date.slice(0, 4) === y && e.date.slice(0, 7) <= month).map(e => e.date.slice(0, 7))).size;
+  $("mYear").textContent = `${y}年の合計：支出 ${yen(ys)}${yi ? `・収入 ${yen(yi)}` : ""}${state.saving && nm ? `・貯金 ${yen(saveOf(month) * nm)}（${nm}か月分）` : ""}`;
+}
+function setIncome(key, raw) {
+  state.income = state.income || {};
+  const x = state.income[month] = state.income[month] || {};
+  const t = String(raw).trim();
+  const v = Math.round(Number(t.replace(/[^\d-]/g, "")) || 0);
+  if (key === "carry") x.carry = t === "" ? null : v; else x[key] = v;
+  save(); renderMoney();
+}
+
+async function updImgInfo() {
+  const n = state.entries.filter(e => e.hasImg).length, nm = monthEntries().filter(e => e.hasImg).length;
+  let q = "";
+  try { const est = await navigator.storage.estimate(); if (est && est.quota) q = `（この端末の保存場所は約${(est.usage / 1048576).toFixed(1)}MB使用・空きは約${Math.max(0, (est.quota - est.usage) / 1073741824).toFixed(1)}GB）`; } catch (e) {}
+  $("imgInfo").textContent = `保存しているレシート画像：全部で${n}枚、この月は${nm}枚。1枚およそ100〜200KBで、1日3枚なら1年でも約150MBです${q}。画像は記録と同じ日付の月に入るので、月を切り替えるとその月のレシートが見られます。`;
+}
+
+// ===== 画面（上：機能、下：家計簿） =====
+const PAGES = [
+  { id: "money", icon: "💰", name: "収入・繰越", desc: "給与などの収入と、翌月への繰越" },
+  { id: "tpl", icon: "⚙", name: "設定", desc: "家計簿の形と費目・固定費・バックアップ" },
+  { id: "wallet", icon: "👛", name: "財布", desc: "財布の中身と計算を合わせる" },
+  { id: "loan", icon: "🤝", name: "貸し借り", desc: "知人・身内とのお金（仮想金額）" },
+  { id: "list", icon: "🧾", name: "レシート", desc: "レシートの記録・直す、手で入力" },
+  { id: "price", icon: "💴", name: "値段しらべ", desc: "商品をどの店でいくらで買ったか" },
+  { id: "chart", icon: "📊", name: "グラフ", desc: "支出の移り変わり・AIのふり返り" },
+  { id: "bank", icon: "🏦", name: "通帳", desc: "通帳を撮って引き落としを家計簿へ" },
+  { id: "export", icon: "📤", name: "書き出し", desc: "Excel・PDFで保存（パソコンで管理）", wide: true }
+];
+const ui = () => (state.ui = state.ui || {});
+const plus = () => (state.plus = state.plus || {});
+const PAY_OPTS = ["現金", "口座払い", "口座引き落とし", "コンビニ払い", "デビットカード", "クレジットカード", "ポイント払い", "電子マネー", "QRコード決済"];
+let hist = ["home"], hi = 0;
+function menuValue(id) {
+  try {
+    if (id === "money") { const v = carryOf(month).v + incOf(month) - spendOf(month); return "残り " + (v < 0 ? "−" : "") + yen(Math.abs(v)); }
+    if (id === "wallet") { const c = walletCalc(); return c ? "あるはず " + yen(c.expect) : "未登録"; }
+    if (id === "loan") { const b = loanBal(); const v = Object.values(b).reduce((a, x) => a + x, 0); return Object.keys(b).length ? signYen(v) : ""; }
+    if (id === "list") { const n = monthEntries().length; return n ? `${n}件` : ""; }
+    if (id === "bank") { const n = (state.banks || []).length; return n ? `${n}口座` : ""; }
+  } catch (e) {}
+  return "";
+}
+function applyLayout() {
+  if (tab !== "home" && !PAGES.some(x => x.id === tab)) tab = "home";
+  const home = tab === "home", lay = $("layout");
+  const big = home && !!ui().big, topBig = !home && !!ui().topBig;
+  lay.classList.toggle("big", big); lay.classList.toggle("topbig", topBig);
+  lay.classList.toggle("fit", home && dragF === null && !big);
+  $("topArea").classList.toggle("page", !home);
+  $("topArea").style.setProperty("--topH", (topFrac() * 100).toFixed(1) + "%");
+  $("bigSw").dataset.label = home ? "表を大きく" : "機能を大きく";
+  $("bigSw").setAttribute("aria-label", home ? "家計簿を大きくする" : "機能の画面を大きくする");
+  $("menuArea").classList.toggle("hidden", !home);
+  $("pageArea").classList.toggle("hidden", home);
+  $("histBack").disabled = hi <= 0; $("histFwd").disabled = hi >= hist.length - 1;
+  $("bigSw").setAttribute("aria-checked", (big || topBig) ? "true" : "false");
+  $("menu").innerHTML = PAGES.map(x => `<button data-page="${x.id}"${x.wide ? ' class="wide"' : ""}><span class="ic">${x.icon}</span><span><b>${x.name}</b><small>${x.desc}</small><span class="v">${esc(menuValue(x.id))}</span></span></button>`).join("");
+  const cur = PAGES.find(x => x.id === tab);
+  $("pageTitle").textContent = cur ? `${cur.icon} ${cur.name}` : "";
+  PAGES.forEach(x => { const el = $("tab-" + x.id); if (el) el.classList.toggle("hidden", x.id !== tab); });
+  if ($("uiTop")) $("uiTop").value = ui().top || "m";
+  if ($("uiVert")) $("uiVert").value = ui().vert ? "1" : "";
+  document.body.classList.toggle("fsL", ui().font === "L"); document.body.classList.toggle("fsXL", ui().font === "XL");
+  if ($("uiFont")) $("uiFont").value = ui().font || "";
+  if ($("plusBatch")) { $("plusBatch").checked = !!plus().batch; $("plusPay").checked = !!plus().pay; $("plusForm").checked = !!plus().form; $("plusLoan").checked = !!state.loanInTable; }
+}
+const TOP_PRESET = { s: .36, m: .46, l: .58 };
+// 境界線の位置：起動したときはボタンが全部見える位置、ボタン・スイッチ・戻る/進むを押すと中間に戻る
+let dragF = null, startFit = true;
+const resetSplit = () => { dragF = null; startFit = false; };
+function topFrac() { return dragF !== null ? dragF : TOP_PRESET[ui().top || "m"]; }
+// 境界線を指で上下にずらす
+{
+  const sp = $("split"); let st = null;
+  sp.addEventListener("pointerdown", e => {
+    const L = $("layout").getBoundingClientRect(), T = $("topArea").getBoundingClientRect();
+    st = { y: e.clientY, h: T.height, L: L.height }; sp.classList.add("drag"); sp.setPointerCapture(e.pointerId);
+    const T0 = $("topArea").getBoundingClientRect().height;
+    startFit = false; dragF = T0 / L.height;
+    if (ui().big || ui().topBig) { ui().big = false; ui().topBig = false; }
+    applyLayout(); st.h = $("topArea").getBoundingClientRect().height;
+    e.preventDefault();
+  });
+  sp.addEventListener("pointermove", e => {
+    if (!st) return;
+    const min = 60, max = st.L - 26 - 70;
+    const h = Math.max(min, Math.min(max, st.h + e.clientY - st.y));
+    dragF = h / st.L; $("topArea").style.setProperty("--topH", (dragF * 100).toFixed(1) + "%");
+  });
+  const end = () => { if (!st) return; st = null; sp.classList.remove("drag"); save(); if (tab === "chart") renderCharts(); };
+  sp.addEventListener("pointerup", end); sp.addEventListener("pointercancel", end);
+  sp.addEventListener("dblclick", () => { resetSplit(); applyLayout(); });
+}
+function goPage(id) {
+  if (id === tab) return;
+  hist = hist.slice(0, hi + 1); hist.push(id); hi = hist.length - 1;
+  tab = id; resetSplit(); render(); $("topBody").scrollTop = 0;
+}
+function histMove(d) { const n = hi + d; if (n < 0 || n >= hist.length) return; hi = n; tab = hist[hi]; resetSplit(); render(); $("topBody").scrollTop = 0; }
+// ===== 家計簿の表：列の幅を指で変える =====
+const colKey = () => state.tpl.layout + (state.tpl.layout === "daily" && ui().vert ? "-v" : "");
+function setFixedW(t, w) {
+  t.querySelector("colgroup")?.remove();
+  const cg = document.createElement("colgroup");
+  w.forEach(x => { const c = document.createElement("col"); c.style.width = x + "px"; cg.appendChild(c); });
+  t.prepend(cg); t.classList.add("fixedw");
+  t.style.tableLayout = "fixed"; t.style.minWidth = "0"; t.style.width = w.reduce((a, x) => a + x, 0) + "px";
+}
+function applyColW() {
+  const t = $("sheet").querySelector("table"); if (!t || !t.tHead) return;
+  const ths = [...t.tHead.rows[0].cells];
+  const w = ((ui().colW || {})[colKey()]);
+  if (w && w.length === ths.length) setFixedW(t, w);
+  // 境目の線は列と列の間だけ（右端の外側には付けない）
+  ths.slice(0, -1).forEach((th, i) => { const h = document.createElement("span"); h.className = "rz"; h.dataset.i = i; th.appendChild(h); });
+}
+{
+  let st = null;
+  $("sheet").addEventListener("pointerdown", e => {
+    const h = e.target.closest(".rz"); if (!h) return;
+    const t = h.closest("table"), ths = [...t.tHead.rows[0].cells];
+    const w = ths.map(x => Math.round(x.getBoundingClientRect().width));
+    setFixedW(t, w);
+    const i = +h.dataset.i; st = { i, x: e.clientX, w0: w[i], w1: w[i + 1], w, t, h };
+    h.classList.add("on"); h.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation();
+  });
+  $("sheet").addEventListener("pointermove", e => {
+    if (!st) return;
+    // 左の列が広がった分だけ右の列が狭くなる（2列の合計と、ほかの線の位置は変わらない）
+    const tot = st.w0 + st.w1, MIN = 32;
+    const a = Math.max(MIN, Math.min(tot - MIN, Math.round(st.w0 + e.clientX - st.x)));
+    st.w[st.i] = a; st.w[st.i + 1] = tot - a;
+    const cols = st.t.querySelectorAll("col"); cols[st.i].style.width = a + "px"; cols[st.i + 1].style.width = (tot - a) + "px";
+  });
+  const end = () => { if (!st) return; st.h.classList.remove("on"); (ui().colW = ui().colW || {})[colKey()] = st.w.slice(); st = null; save(); };
+  $("sheet").addEventListener("pointerup", end); $("sheet").addEventListener("pointercancel", end);
+  $("sheet").addEventListener("dblclick", e => { if (e.target.closest(".rz")) { delete (ui().colW || {})[colKey()]; save(); render(); toast("列の幅を元に戻しました"); } });
+}
+// ===== 費目の行を上下に動かして並べ替える（費目が縦に並ぶ表） =====
+function addRowDrag() {
+  const t = $("sheet").querySelector("table"); if (!t) return;
+  const names = catNames();
+  t.querySelectorAll("tbody tr").forEach(tr => {
+    const td = tr.cells[0]; if (!td) return;
+    const n = td.textContent.trim(); if (!names.includes(n)) return;
+    tr.dataset.rcat = n;
+    const h = document.createElement("span"); h.className = "rgrip"; h.textContent = "⋮⋮"; h.title = "つかんで上下に動かすと順番を変えられます";
+    td.prepend(h);
+  });
+}
+{
+  let st = null;
+  $("sheet").addEventListener("pointerdown", e => {
+    const g = e.target.closest(".rgrip"); if (!g) return;
+    const tr = g.closest("tr"), rows = [...tr.parentNode.querySelectorAll("tr[data-rcat]")];
+    st = { tr, rows, y: e.clientY, mids: rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; }), h: tr.getBoundingClientRect().height, from: rows.indexOf(tr), to: rows.indexOf(tr) };
+    tr.classList.add("rdrag"); g.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation();
+  });
+  $("sheet").addEventListener("pointermove", e => {
+    if (!st) return;
+    const dy = e.clientY - st.y; st.tr.style.transform = `translateY(${dy}px)`;
+    const y = st.mids[st.from] + dy; let to = 0;
+    st.mids.forEach((m, i) => { if (i !== st.from && y > m) to = i < st.from ? i + 1 : i; });
+    if (y < st.mids[0]) to = 0; st.to = Math.max(0, Math.min(st.rows.length - 1, to));
+    st.rows.forEach((r, i) => { if (r === st.tr) return; let s = 0; if (st.from < st.to && i > st.from && i <= st.to) s = -st.h; if (st.from > st.to && i < st.from && i >= st.to) s = st.h; r.style.transform = s ? `translateY(${s}px)` : ""; });
+  });
+  const end = () => {
+    if (!st) return; const { from, to, rows } = st; st = null;
+    if (from !== to) {
+      const order = rows.map(r => r.dataset.rcat), [m] = order.splice(from, 1); order.splice(to, 0, m);
+      const cs = state.tpl.categories, byName = Object.fromEntries(cs.map(c => [c.name, c]));
+      const rest = cs.filter(c => !order.includes(c.name));
+      state.tpl.categories = [...order.map(n => byName[n]), ...rest];
+      save(); toast(`「${m}」の順番を変えました`);
+    }
+    render();
+  };
+  $("sheet").addEventListener("pointerup", end); $("sheet").addEventListener("pointercancel", end);
+}
+// ===== 表の全体を1画面で見る =====
+function fitFull() {
+  const box = $("fsBox"), inner = $("fsInner"), wrap = $("fsWrap"), t = inner.querySelector("table"); if (!t) return;
+  inner.style.transform = "none";
+  const w = t.offsetWidth, h = t.offsetHeight, bw = box.clientWidth, bh = box.clientHeight;
+  const k = Math.min(bw / w, bh / h, 1.6);
+  inner.style.transform = `scale(${k})`; wrap.style.width = w * k + "px"; wrap.style.height = h * k + "px";
+  const tallT = h > w, tallS = innerHeight > innerWidth;
+  $("fsHint").textContent = k < .7 && tallT !== tallS ? `文字が小さいときは、スマホを${tallT ? "縦" : "横"}向きにすると大きく見えます。` : "";
+}
+function openFull() {
+  $("fsInner").innerHTML = $("sheet").innerHTML;
+  $("fsInner").querySelectorAll(".rz,.rgrip").forEach(x => x.remove());
+  $("fsInner").querySelectorAll("input").forEach(x => { x.replaceWith(Object.assign(document.createElement("span"), { textContent: x.value || "" })); });
+  $("fsInner").querySelectorAll(".flash").forEach(x => x.classList.remove("flash"));
+  $("fsTitle").textContent = `${state.tpl.title}　${+month.slice(0, 4)}年${+month.slice(5)}月`;
+  $("fullSheet").classList.remove("hidden"); requestAnimationFrame(fitFull);
+}
+$("fsOpen").onclick = openFull;
+$("fsClose").onclick = () => $("fullSheet").classList.add("hidden");
+addEventListener("resize", () => { if (!$("fullSheet").classList.contains("hidden")) fitFull(); });
+$("colEven").onclick = () => {
+  const t = $("sheet").querySelector("table"); if (!t || !t.tHead) { toast("先に家計簿の表を表示してください"); return; }
+  const ths = [...t.tHead.rows[0].cells], w = ths.map(x => Math.round(x.getBoundingClientRect().width));
+  const rest = w.slice(1), avg = Math.round(rest.reduce((a, x) => a + x, 0) / Math.max(1, rest.length));
+  (ui().colW = ui().colW || {})[colKey()] = [w[0], ...rest.map(() => Math.max(48, avg))]; save(); render(); toast("列の幅を均等にそろえました");
+};
+$("colReset").onclick = () => { delete (ui().colW || {})[colKey()]; save(); render(); toast("列の幅を元に戻しました"); };
+
+function setMonth(ym) { month = ym; render(); }
+function openYM(kind) {
+  const pop = $("ymPop"), [y, m] = month.split("-").map(Number);
+  const has = new Set((state.entries || []).map(e => e.date.slice(0, 7)));
+  let h = "";
+  if (kind === "y") {
+    const ys = new Set([y, new Date().getFullYear()]); has.forEach(k => ys.add(+k.slice(0, 4)));
+    const lo = Math.min(...ys) - 1, hiY = Math.max(...ys) + 1;
+    for (let k = hiY; k >= lo; k--) h += `<button data-ym="${k}-${pad(m)}" class="${k === y ? "on" : ""}">${k}年</button>`;
+  } else {
+    for (let k = 12; k >= 1; k--) { const ym = `${y}-${pad(k)}`; h += `<button data-ym="${ym}" class="${k === m ? "on" : ""}">${has.has(ym) ? '<span class="d">●</span>' : ""}${k}月</button>`; }
+  }
+  pop.innerHTML = h; pop.classList.remove("hidden");
+  const r = $(kind === "y" ? "ymY" : "ymM").getBoundingClientRect();
+  pop.style.top = (r.bottom + 4) + "px"; pop.style.left = Math.max(8, Math.min(r.left, innerWidth - pop.offsetWidth - 8)) + "px";
+  pop.style.maxHeight = Math.max(160, innerHeight - r.bottom - 100) + "px";
+  const on = pop.querySelector(".on"); if (on) on.scrollIntoView({ block: "center" });
+}
+
+function render() {
+  const [y, m] = month.split("-").map(Number);
+  applyLayout();
+  const T = totals();
+  $("sum").textContent = yen(T.sum);
+  renderMoney(); renderLoans(); renderWallet(); applyLayout(); if (tab === "bank") renderBank(); if (tab === "list") updImgInfo(); if (tab === "chart") { renderCharts(); renderReview(); } if (tab === "tpl") renderFixed();
+  const max = Math.max(1, ...sheetCats(T).map(c => Math.max(T.byCat[c.name] || 0, c.budget || 0)));
+  $("bars").innerHTML = sheetCats(T).filter(c => T.byCat[c.name] || c.budget).map(c => {
+    const v = T.byCat[c.name] || 0, over = c.budget && v > c.budget;
+    return `<div class="bar"><span class="n">${esc(c.name)}</span><span class="t"><i class="${over ? "over" : ""}" style="width:${Math.min(100, v / (c.budget || max) * 100)}%"></i></span><span>${yen(v)}${c.budget ? `<span class="muted"> / ${yen(c.budget)}</span>` : ""}</span></div>`;
+  }).join("") || `<p class="muted" style="margin:4px 0 0">まだ記録がありません。下の「📷 レシートを撮る」から始めましょう。</p>`;
+  $("sheetTitle").textContent = state.tpl.title; $("ymY").textContent = `${y}年`; $("ymM").textContent = `${m}月`;
+  renderSheet(T, y, m);
+  renderEntries();
+  renderTplEditor();
+}
+
+function renderSheet(T, y, m) {
+  const cats = sheetCats(T), L = state.tpl.layout;
+  let h = "";
+  if (L === "daily" && ui().vert) {
+    const days = new Date(y, m, 0).getDate(), wd = "日月火水木金土", today = todayStr();
+    const isB = c => c.budget !== undefined && ![UNSET, EXTRA, LOANCAT].includes(c.name);
+    let head = `<th class="day">費目</th><th class="num vsum">合計</th><th class="num vsum">予算</th><th class="num vsum">残り</th>`;
+    const dayTot = [];
+    for (let d = 1; d <= days; d++) { const w = new Date(y, m - 1, d).getDay(); head += `<th class="${w === 0 || w === 6 ? "we" : ""}${today === `${y}-${pad(m)}-${pad(d)}` ? " today" : ""}">${d}<br><small>${wd[w]}</small></th>`; dayTot[d] = 0; }
+    h = `<table class="vert"><thead><tr>${head}</tr></thead><tbody>`;
+    for (const c of cats) {
+      let tds = "";
+      for (let d = 1; d <= days; d++) { const k = d + "|" + c.name, v = T.byDayCat[k] || 0; dayTot[d] += v;
+        tds += `<td class="num cell${flashKey && flashKey.has(k) ? " flash" : ""}" data-d="${d}" data-c="${esc(c.name)}">${v ? v.toLocaleString("ja-JP") : ""}</td>`; }
+      const r = c.budget ? c.budget - (T.byCat[c.name] || 0) : null;
+      h += `<tr><td class="day">${esc(c.name)}</td><td class="num vsum"><b>${(T.byCat[c.name] || 0).toLocaleString("ja-JP")}</b></td>
+        <td class="num vsum">${isB(c) ? `<input class="bud" inputmode="numeric" data-bud="${esc(c.name)}" value="${c.budget ? c.budget.toLocaleString("ja-JP") : ""}" placeholder="予算">` : ""}</td>
+        <td class="num vsum" style="${r !== null && r < 0 ? "color:var(--warn)" : ""}">${r !== null ? r.toLocaleString("ja-JP") : ""}</td>${tds}</tr>`;
+    }
+    h += `</tbody><tfoot><tr><td class="day">合計</td><td class="num vsum">${T.sum.toLocaleString("ja-JP")}</td><td class="num vsum">${cats.reduce((s, c) => s + (c.budget || 0), 0).toLocaleString("ja-JP")}</td><td class="vsum"></td>${dayTot.slice(1).map(v => `<td class="num">${v ? v.toLocaleString("ja-JP") : ""}</td>`).join("")}</tr></tfoot></table>`;
+    $("sheetHint").textContent = "縦表示：費目が縦、日付が横に並びます。数字を押すと、その日の中身が見られます。";
+  } else if (L === "daily") {
+    const days = new Date(y, m, 0).getDate(), wd = "日月火水木金土";
+    const today = todayStr();
+    h = `<table><thead><tr><th class="day">日</th>${cats.map(c => `<th>${esc(c.name)}</th>`).join("")}<th>合計</th></tr></thead><tbody>`;
+    for (let d = 1; d <= days; d++) {
+      const w = new Date(y, m - 1, d).getDay();
+      let rs = 0;
+      const tds = cats.map(c => { const v = T.byDayCat[d + "|" + c.name] || 0; rs += v; const k = d + "|" + c.name;
+        return `<td class="num cell${flashKey && flashKey.has(k) ? " flash" : ""}" data-d="${d}" data-c="${esc(c.name)}">${v ? v.toLocaleString("ja-JP") : ""}</td>`; }).join("");
+      const isT = today === `${y}-${pad(m)}-${pad(d)}`;
+      h += `<tr class="${w === 0 || w === 6 ? "we" : ""}${isT ? " today" : ""}"><td class="day">${d}(${wd[w]})</td>${tds}<td class="num"><b>${rs ? rs.toLocaleString("ja-JP") : ""}</b></td></tr>`;
+    }
+    h += `</tbody><tfoot><tr><td class="day">合計</td>${cats.map(c => `<td class="num">${(T.byCat[c.name] || 0).toLocaleString("ja-JP")}</td>`).join("")}<td class="num">${T.sum.toLocaleString("ja-JP")}</td></tr>`;
+    {
+      h += `<tr><td class="day">予算</td>${cats.map(c => `<td class="num">${c.budget !== undefined && ![UNSET, EXTRA, LOANCAT].includes(c.name) ? `<input class="bud" inputmode="numeric" data-bud="${esc(c.name)}" value="${c.budget ? c.budget.toLocaleString("ja-JP") : ""}" placeholder="予算">` : ""}</td>`).join("")}<td class="num">${cats.reduce((s, c) => s + (c.budget || 0), 0).toLocaleString("ja-JP")}</td></tr>`;
+      h += `<tr><td class="day">残り</td>${cats.map(c => { if (!c.budget) return "<td></td>"; const r = c.budget - (T.byCat[c.name] || 0); return `<td class="num" style="${r < 0 ? "color:var(--warn)" : ""}">${r.toLocaleString("ja-JP")}</td>`; }).join("")}<td></td></tr>`;
+    }
+    h += `</tfoot></table>`;
+    $("sheetHint").textContent = "数字を押すと、その日の中身が見られます。表は横にずらせます。";
+  } else if (L === "list") {
+    const cols = state.tpl.columns;
+    h = `<table><thead><tr>${cols.map(c => `<th class="${c.field === "amount" ? "num" : ""}">${esc(c.label)}</th>`).join("")}</tr></thead><tbody>`;
+    const rows = [];
+    for (const e of monthEntries()) lines(e).forEach(it => rows.push({ e, it }));
+    for (const { e, it } of rows) {
+      const val = f => ({ date: `${+e.date.slice(5, 7)}/${+e.date.slice(8, 10)}`, store: e.store, item: it.name, category: fixCat(it.cat), amount: it.price.toLocaleString("ja-JP"), payment: e.pay, memo: e.memo || "", other: "" }[f]);
+      h += `<tr class="${flashKey && flashKey.has(e.id) ? "" : ""}">${cols.map(c => `<td class="${c.field === "amount" ? "num" : ""} cell${flashKey && flashKey.has(e.id) ? " flash" : ""}" data-e="${e.id}">${esc(val(c.field))}</td>`).join("")}</tr>`;
+    }
+    if (!rows.length) h += `<tr><td colspan="${cols.length}" class="muted" style="text-align:center;padding:18px">まだ記録がありません</td></tr>`;
+    const ai = cols.findIndex(c => c.field === "amount");
+    h += `</tbody><tfoot><tr>${cols.map((c, i) => `<td class="${i === ai ? "num" : ""}">${i === 0 ? "合計" : i === ai ? T.sum.toLocaleString("ja-JP") : ""}</td>`).join("")}</tr></tfoot></table>`;
+    $("sheetHint").textContent = "行を押すと、そのレシートを直せます。";
+  } else {
+    h = `<table><thead><tr><th>費目</th><th class="num">予算</th><th class="num">使った額</th><th class="num">残り</th></tr></thead><tbody>`;
+    for (const c of cats) {
+      const v = T.byCat[c.name] || 0, r = c.budget ? c.budget - v : null;
+      h += `<tr><td>${esc(c.name)}</td>${`<td class="num">${c.budget !== undefined && ![UNSET, EXTRA, LOANCAT].includes(c.name) ? `<input class="bud" inputmode="numeric" data-bud="${esc(c.name)}" value="${c.budget ? c.budget.toLocaleString("ja-JP") : ""}" placeholder="予算">` : ""}</td>`}<td class="num${flashKey && flashKey.has("c|" + c.name) ? " flash" : ""}">${v.toLocaleString("ja-JP")}</td><td class="num" style="${r < 0 ? "color:var(--warn)" : ""}">${r === null ? "-" : r.toLocaleString("ja-JP")}</td></tr>`;
+    }
+    const B = cats.reduce((s, c) => s + (c.budget || 0), 0);
+    h += `</tbody><tfoot><tr><td>合計</td><td class="num">${B ? B.toLocaleString("ja-JP") : "-"}</td><td class="num">${T.sum.toLocaleString("ja-JP")}</td><td class="num">${B ? (B - T.sum).toLocaleString("ja-JP") : "-"}</td></tr></tfoot></table>`;
+    $("sheetHint").textContent = "予算のマスに数字を入れると、残りが自動で計算されます（予算は毎月同じ）。";
+  }
+  $("sheet").innerHTML = h;
+  applyColW(); addRowDrag();
+  if (flashKey) setTimeout(() => { flashKey = null; }, 2500);
+}
+
+function renderEntries() {
+  const list = monthEntries().slice().reverse();
+  $("entries").innerHTML = list.map(e => {
+    const s = entrySum(e);
+    return `<div class="entry" data-e="${e.id}">${e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="ph">${e.loan ? "🤝" : e.fixed ? "🔁" : "✍️"}</div>`}
+      <div class="b"><div class="s">${esc(e.store || "（店名なし）")}</div>
+      <div class="muted">${+e.date.slice(5, 7)}月${+e.date.slice(8, 10)}日・${e.items.length}品${e.pay ? "・" + esc(e.pay) : ""}</div>
+      <div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.items.map(i => i.name).join("、"))}</div></div>
+      <div class="a">${yen(s)}</div></div>`;
+  }).join("") || `<p class="muted">この月の記録はまだありません。</p>`;
+}
+
+function renderTplEditor() {
+  const t = state.tpl;
+  if (document.activeElement !== $("tplTitle")) $("tplTitle").value = t.title;
+  $("tplLayout").value = t.layout;
+  if (!$("cats").contains(document.activeElement)) {
+    $("cats").innerHTML = t.categories.map((c, i) => `<span class="chip"><span class="cren" data-ren="${i}" title="押すと名前を変えられます">${esc(c.name)} ✎</span><input inputmode="numeric" placeholder="予算" data-b="${i}" value="${c.budget || ""}"><button data-del="${i}" aria-label="${esc(c.name)}を消す">×</button></span>`).join("");
+  }
+}
+
+// ===== レシート確認パネル =====
+let draft = null;
+function openPanel(html) { $("panel").innerHTML = html; $("ov").classList.remove("hidden"); }
+// 同じ商品の過去の値段
+function priceHistory(it, exceptId) {
+  const k1 = normName(it.raw || ""), k2 = normName(it.name || "");
+  const out = [];
+  for (const e of state.entries) { if (e.id === exceptId) continue;
+    for (const x of e.items) { if ((k1 && normName(x.raw || "") === k1) || (k2 && normName(x.name) === k2)) out.push({ date: e.date, store: e.store, name: x.name, price: x.price, id: e.id }); } }
+  return out.sort((a, b) => b.date.localeCompare(a.date));
+}
+const md = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+function findDup(d) {
+  if (d.id) return null;
+  const amt = d.total || entrySum(d), st = normName(d.store).slice(0, 4);
+  return state.entries.find(e => e.date === d.date && Math.abs(entrySum(e) - amt) < 1 && (!st || !e.store || normName(e.store).slice(0, 4) === st)) || null;
+}
+let queue = [];
+function closePanel(keep) { $("ov").classList.add("hidden"); $("panel").innerHTML = ""; draft = null; if (keep !== true) queue = []; }
+// まとめ撮りの次のレシートへ
+function nextInQueue() { if (!queue.length) return false; showDraft(queue.shift()); return true; }
+$("ov").addEventListener("click", e => { if (e.target === $("ov") && !draft?.busy) closePanel(); });
+
+// レシートの位置を探す（まとめ読み用。写真の左上0・右下100の割合）
+async function locateReceipts(blob) {
+  const r = await sample.json(`添付の写真に写っているレシート（紙の領収書）を全部探して、1枚ずつ位置を答えてください。
+- 位置は写真の左上を(0,0)、右下を(100,100)とした割合で、レシートの紙全体（上の店名から下の端まで）が入る四角形 x,y,w,h。
+- 少し大きめに囲む。となりのレシートとは重ねない。左上から順番に並べる。
+- レシートが無ければ空の配列。
+次のJSONだけを返してください: {"receipts":[{"x":5,"y":3,"w":28,"h":90}]}`, { images: [blob], modelTier: "default" });
+  return (Array.isArray(r && r.receipts) ? r.receipts : []).map(b => ({ x: +b.x || 0, y: +b.y || 0, w: +b.w || 0, h: +b.h || 0 })).filter(b => b.w > 3 && b.h > 3);
+}
+// 元の画質のまま1枚分を切り抜く（まわりに少し余白をつける）
+function cropBox(im, b) {
+  const W = im.naturalWidth, H = im.naturalHeight, padX = 2.5, padY = 2;
+  const x0 = Math.max(0, (b.x - padX) / 100 * W), y0 = Math.max(0, (b.y - padY) / 100 * H);
+  const x1 = Math.min(W, (b.x + b.w + padX) / 100 * W), y1 = Math.min(H, (b.y + b.h + padY) / 100 * H);
+  const c = document.createElement("canvas"); c.width = Math.round(x1 - x0); c.height = Math.round(y1 - y0);
+  c.getContext("2d").drawImage(im, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+  return new Promise(res => { const o = new Image(); o.onload = () => res(o); o.src = c.toDataURL("image/jpeg", .95); });
+}
+const MULTI_MAX = 3, BATCH_MAX = 30;
+const blankDraft = (thumb, full) => ({ id: null, busy: true, thumb, full, date: todayStr(), store: "", items: [], total: 0, pay: "" });
+const failDraft = (d, e, extra) => { d.busy = false; d.err = ((e && e.message && e.code === "refused") ? "読み取れませんでした：" + e.message : errMsg(e)) + (extra || ""); d.items = [{ name: "", price: 0, cat: UNSET }]; return d; };
+const fillDraft = (d, r) => { Object.assign(d, r, { busy: false }); if (!d.items.length) d.items = [{ name: "", price: d.total, cat: UNSET }]; return d; };
+const FATAL = ["no_key", "bad_key", "key_denied", "rate_limited", "offline"];
+// 1枚の写真を読んで、レシートごとの下書きを返す
+// mode: "camera"＝アプリ内で撮影（1枚ずつ）、"pick"＝カメラアプリで撮った写真（3枚までまとめ読み）
+async function analyzeImage(im, mode, status) {
+  const whole = blankDraft(shrink(im, 240, .6).dataUrl(), await shrink(im, 1400, .8).toBlob());
+  let boxes = [];
+  if (mode === "pick") { try { boxes = await locateReceipts(await shrink(im, 1600, .85).toBlob()); } catch (e) { if (e && FATAL.includes(e.code)) throw e; boxes = []; } }
+  if (mode === "camera" || boxes.length <= 1) {
+    try {
+      const rs = await readReceipt(await shrink(im, 2400, .88).toBlob());
+      fillDraft(whole, rs[0]);
+      if (mode === "camera" && rs.length > 1) whole.note = "📷 この写真には複数のレシートが写っていたので、1枚目だけ読みました。まとめて読むときは、スマホのカメラアプリで撮った写真を「🖼 写真から」で読み込んでください。";
+    } catch (e) { if (e && FATAL.includes(e.code)) throw e; failDraft(whole, e); }
+    return [whole];
+  }
+  const over = boxes.length > MULTI_MAX; boxes = boxes.slice(0, MULTI_MAX);
+  const out = [];
+  for (let i = 0; i < boxes.length; i++) {
+    status && status(i + 1, boxes.length);
+    const c = await cropBox(im, boxes[i]);
+    const d = blankDraft(shrink(c, 240, .6).dataUrl(), await shrink(c, 1400, .8).toBlob());
+    try { const rs = await readReceipt(await shrink(c, 2400, .9).toBlob(), true); fillDraft(d, rs[0]); }
+    catch (e) { if (e && FATAL.includes(e.code)) throw e; failDraft(d, e, "\nこの1枚だけ、文字が読める近さで撮り直して「写真から」で読み込んでください。"); }
+    d.qi = i + 1; d.qn = boxes.length; d.multi = true;
+    if (i === 0 && over) d.note = "4枚以上写っていたので、左上から3枚だけ読みました。4枚目からは文字がつぶれやすいので、別の写真で読み込んでください。";
+    out.push(d);
+  }
+  return out;
+}
+
+// 1枚だけ選んだとき・アプリ内で撮ったとき：その場で読む
+async function onReceiptFile(file, mode = "pick") {
+  if (!file) return;
+  if (!isImg(file)) { toast("画像のファイルを選んでください"); return; }
+  let im;
+  try { im = await loadImage(file); } catch (e) { openPanel(`<p class="err">${esc(e.message)}</p><div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">閉じる</button></div>`); return; }
+  const thumb = shrink(im, 240, .6).dataUrl();
+  draft = blankDraft(thumb, null);
+  const token = draft;
+  const status = t => openPanel(`<img class="thumb" src="${thumb}" alt=""><div class="spin"></div><p style="text-align:center;margin:0"><b>${t}</b></p><p class="muted" style="text-align:center">10〜40秒ほどかかります</p>`);
+  status("レシートを読み取っています…");
+  if (!sample) { draft.full = await shrink(im, 1400, .8).toBlob(); draft.busy = false; draft.err = "AIの鍵がまだ設定されていないため、手で入力してください（⚙設定の「🔑 AIの設定」で設定すると、AIが読み取ります）。"; draft.items = [{ name: "", price: 0, cat: catNames()[0] }]; renderDraft(); return; }
+  let ds;
+  try { ds = await analyzeImage(im, mode, (i, n) => { if (draft === token) status(`${n}枚のレシートを1枚ずつ読んでいます…（${i}/${n}）`); }); }
+  catch (e) { ds = [failDraft(blankDraft(thumb, await shrink(im, 1400, .8).toBlob()), e)]; }
+  if (draft !== token) return;
+  draft = ds.shift(); queue = ds;
+  renderDraft();
+}
+
+// ===== 何枚もまとめて選んだとき：裏で順番に読む（待っている間はほかの画面を使える） =====
+let jobsRunning = false, jobsStopped = "";
+async function addJobs(files) {
+  files = files.filter(isImg);
+  if (files.length > BATCH_MAX) { toast(`一度に読めるのは${BATCH_MAX}枚までです。最初の${BATCH_MAX}枚を読みます`); files = files.slice(0, BATCH_MAX); }
+  state.jobs = state.jobs || [];
+  for (const f of files) { const jid = uid(); if (await store.putImg("j-" + jid, f)) state.jobs.push({ jid, name: f.name || "写真", added: Date.now() }); }
+  state.jobTotal = (state.jobs.length === files.length ? 0 : (state.jobTotal || 0)) + files.length;
+  if (!state.jobs.length) state.jobTotal = 0;
+  save(); jobsStopped = ""; renderJobBar(); runJobs();
+  toast(`${files.length}枚を読み取りの列に入れました。待っている間、ほかの画面を使えます`);
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function runJobs() {
+  if (jobsRunning || !(state.jobs || []).length) return;
+  if (!sample) { jobsStopped = ERR.no_key; renderJobBar(); return; }
+  jobsRunning = true; jobsStopped = ""; renderJobBar();
+  while ((state.jobs || []).length && !jobsStopped) {
+    const job = state.jobs[0];
+    const blob = await store.getImg("j-" + job.jid);
+    let ds = null;
+    if (blob) {
+      let im = null; try { im = await loadImage(blob); } catch (e) { im = null; }
+      if (im) {
+        for (let tries = 0; tries < 4 && !ds; tries++) {
+          try { ds = await analyzeImage(im, "pick", (i, n) => { jobSub = `この写真のレシート ${i}/${n}枚目`; renderJobBar(); }); }
+          catch (e) {
+            if (e && e.code === "rate_limited" && tries < 3) { jobSub = "AIが混み合っているので少し待っています…"; renderJobBar(); await sleep(30000 * (tries + 1)); continue; }
+            jobsStopped = errMsg(e); break;
+          }
+        }
+      } else ds = [failDraft(blankDraft("", null), { message: OPEN_ERR, code: "refused" })];
+    }
+    if (jobsStopped) break;
+    for (const d of ds || []) {
+      d.pid = uid(); d.src = job.name;
+      if (d.full) { if (await store.putImg("p-" + d.pid, d.full)) d.hasPimg = true; delete d.full; }
+      delete d.qi; delete d.qn;
+      (state.pending = state.pending || []).push(d);
+    }
+    state.jobs.shift(); store.delImgs(["j-" + job.jid]); jobSub = "";
+    save(); renderJobBar();
+    if (state.jobs.length) await sleep(1500);
+  }
+  jobsRunning = false; jobSub = "";
+  if (!(state.jobs || []).length) {
+    state.jobTotal = 0; save();
+    if ((state.pending || []).length) {
+      toast(`読み取りが終わりました（${state.pending.length}件）。確認して書き込んでください`);
+      try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+    }
+  }
+  renderJobBar();
+}
+let jobSub = "";
+function renderJobBar() {
+  const jobs = (state.jobs || []).length, pend = (state.pending || []).length, total = Math.max(state.jobTotal || 0, jobs);
+  const bar = $("jobBar");
+  if (!jobs && !pend) { bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden");
+  let h = "";
+  if (jobs) {
+    const done = total - jobs;
+    h += `<div class="row" style="justify-content:space-between"><b>${jobsStopped ? "⏸ 読み取りが止まっています" : "🧾 まとめて読み取り中…"}</b><span class="muted">写真 ${done}/${total}枚</span></div>
+      <div class="bar" style="grid-template-columns:1fr;margin:6px 0"><span class="t"><i style="width:${total ? done / total * 100 : 0}%"></i></span></div>
+      ${jobsStopped ? `<p class="err" style="margin:0">${esc(jobsStopped)}</p><div class="row" style="margin-top:6px"><button class="btn sm main" id="jobResume">続きから読む</button><button class="btn sm warn" id="jobClear">残りをやめる</button></div>`
+        : `<p class="muted" style="margin:0;font-size:12px">${jobSub ? esc(jobSub) + "　" : ""}この間、ほかの画面を使えます。アプリを閉じると止まりますが、次に開いたときに続きから読みます。</p>`}`;
+  }
+  if (pend) h += `<div class="row" style="justify-content:space-between;${jobs ? "margin-top:10px;border-top:1px dashed var(--line);padding-top:10px" : ""}"><span><b>✓ 読み取り済み ${pend}件</b><br><span class="muted" style="font-size:12px">まだ家計簿には入っていません</span></span><button class="btn sm main" id="pendGo">確認して書き込む</button></div>`;
+  bar.innerHTML = h;
+  if ($("pendGo")) $("pendGo").onclick = () => { const list = state.pending.slice(); queue = list.slice(1); showDraft(list[0]); };
+  if ($("jobResume")) $("jobResume").onclick = () => { jobsStopped = ""; runJobs(); };
+  if ($("jobClear")) $("jobClear").onclick = () => { store.delImgs(state.jobs.map(j => "j-" + j.jid)); state.jobs = []; state.jobTotal = 0; jobsStopped = ""; save(); renderJobBar(); };
+}
+// 読み取り済みの下書きを開く（大きい画像は保存場所から出す）
+function showDraft(d) {
+  if (d && d.pid && d.hasPimg && !d.full) { store.getImg("p-" + d.pid).then(b => { d.full = b || null; draft = d; renderDraft(); }); return; }
+  draft = d; renderDraft();
+}
+function dropPending(d) { if (!d || !d.pid) return; state.pending = (state.pending || []).filter(x => x.pid !== d.pid); store.delImgs(["p-" + d.pid]); save(); renderJobBar(); }
+
+function openEntry(id) {
+  if (String(id).startsWith("loan-")) { const l = (state.loans || []).find(x => "loan-" + x.id === id); if (l) showLoanPerson(l.who); return; }
+  const e = state.entries.find(x => x.id === id); if (!e) return;
+  draft = JSON.parse(JSON.stringify(e));
+  renderDraft();
+}
+
+function renderDraft() {
+  const d = draft; if (!d) return;
+  const cats = [UNSET, ...catNames()];
+  d.bag = d.bag || { has: false, price: 0 }; d.tax = d.tax || { amount: 0, incl: true };
+  openPanel(`
+    ${d.thumb ? `<img class="thumb" src="${d.thumb}" alt="" id="dThumb" style="cursor:zoom-in">${(d.full || d.hasImg) ? `<p class="muted" style="text-align:center;margin:-6px 0 8px">画像を押すと大きく見られます</p>` : ""}` : ""}
+    ${!d.id && !d.busy && d.store !== undefined && (d.items || []).length && !d.err ? `<p style="margin:0 0 4px;text-align:right"><button class="repl" id="dReport">⚑ AIの答えを報告</button></p>` : ""}
+    <h2>${d.id ? "記録を直す" : "読み取った内容"}${d.qn > 1 ? `<span class="muted" style="font-weight:400">（${d.qi}/${d.qn}枚目）</span>` : ""}${d.pid ? `<span class="muted" style="font-weight:400">（残り${(state.pending || []).length}件）</span>` : ""}</h2>
+    ${d.qn > 1 && d.qi === 1 ? `<p class="note" style="margin:0 0 8px">1枚の写真から${d.qn}枚のレシートを見つけて、1枚ずつ切り分けて読みました。1枚ずつ確かめて書き込んでください。</p>` : ""}
+    ${d.note ? `<p class="note" style="margin:0 0 8px">${esc(d.note)}</p>` : ""}
+    ${(() => { const du = findDup(d); return du ? `<p class="diff bad" style="margin:0 0 8px">⚠ 同じ日・同じ金額の記録がもうあります（${esc(du.store || "店名なし")} ${yen(entrySum(du))}）。二重に書き込んでいないか確かめてください。</p>` : ""; })()}
+    ${d.err ? `<p class="err" style="white-space:pre-wrap">${esc(d.err)}</p>` : `<p class="muted" style="margin-top:0">${d.id ? "" : "違うところがあれば直してから書き込んでください。"}</p>`}
+    <div class="grid2">
+      <div><label class="f">日付</label><input class="t" type="date" id="dDate" value="${esc(d.date)}"></div>
+      <div><label class="f">支払い</label><input class="t" id="dPay" value="${esc(d.pay)}" placeholder="現金など"></div>
+    </div>
+    ${plus().pay ? `<div class="paychips" id="dPayChips">${(() => { const cur = (d.pay || "").split(/[・、,，\s]+/).filter(Boolean); return PAY_OPTS.concat(cur.filter(x => !PAY_OPTS.includes(x))).map(o => `<button type="button" class="${cur.includes(o) ? "on" : ""}" data-pay="${esc(o)}">${esc(o)}</button>`).join(""); })()}</div>` : ""}
+    <label class="f">店名</label><input class="t" id="dStore" value="${esc(d.store)}" placeholder="店名">
+    <div style="margin-top:8px">${d.items.map((it, i) => `
+      <div class="item">
+        <input class="t" data-k="name" data-i="${i}" value="${esc(it.name)}" placeholder="品目">
+        <input class="t" data-k="price" data-i="${i}" value="${it.price || ""}" inputmode="numeric" placeholder="金額" style="text-align:right">
+        ${(it.disc || it.raw || it.guess || it.known) ? `<div class="muted" style="grid-column:1/3;margin-top:-4px;font-size:12px">${[
+          it.raw ? `印字：${esc(it.raw)}` : "", it.known ? "📒 前に選んだ費目" : "", it.guess ? `<span style="color:var(--warn)">🤔 AIの推測</span>` : "",
+          it.disc ? `🏷 ${it.disc.toLocaleString("ja-JP")}円 値引き済み` : ""].filter(Boolean).join("　")}</div>` : ""}
+        ${(() => { const h = priceHistory(it, d.id)[0]; return h ? `<div class="muted" style="grid-column:1/3;margin-top:-4px;font-size:12px">💴 前回 ${md(h.date)} ${esc(h.store || "")} ${yen(h.price)}${it.price && h.price !== it.price ? (it.price > h.price ? `<span style="color:var(--warn)">（${(it.price - h.price).toLocaleString("ja-JP")}円高い）</span>` : `（${(h.price - it.price).toLocaleString("ja-JP")}円安い）`) : ""}</div>` : ""; })()}
+        ${(fixCat(it.cat) === UNSET || it.guess) && (it.raw || it.name) ? `<a class="muted" style="grid-column:1/3;margin-top:-4px;font-size:13px" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(((d.store || "").split(/\s/)[0] + " " + (it.raw || it.name)).trim())}">🔍 「${esc(it.raw || it.name)}」をGoogleで調べる</a>` : ""}
+        <select class="t cat${fixCat(it.cat) === UNSET ? " unset" : ""}" data-k="cat" data-i="${i}">${cats.map(c => `<option${c === fixCat(it.cat) ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>
+        <button class="btn sm x" data-rm="${i}">消す</button>
+      </div>`).join("")}
+    </div>
+    <div class="row"><button class="btn sm" id="dAdd">＋ 品目を足す</button><span class="muted">費目をまとめて：</span>
+      <select class="t" id="dAll" style="width:auto"><option value="">選ぶ</option>${cats.map(c => `<option>${esc(c)}</option>`).join("")}</select></div>
+    <div class="foot">
+      <div class="l"><span>小計</span><span></span><b class="num" id="fSub" style="text-align:right"></b></div>
+      <div class="l"><span>レジ袋</span><select class="t" id="fBag"><option value="0"${d.bag.has ? "" : " selected"}>無し</option><option value="1"${d.bag.has ? " selected" : ""}>有り</option></select>
+        <input class="t" id="fBagP" inputmode="numeric" value="${d.bag.price || ""}" placeholder="円" style="text-align:right${d.bag.has ? "" : ";visibility:hidden"}"></div>
+      <div class="l"><span>消費税</span><select class="t" id="fTaxI"><option value="1"${d.tax.incl ? " selected" : ""}>内税（合計に含む）</option><option value="0"${d.tax.incl ? "" : " selected"}>外税（合計に足す）</option></select>
+        <input class="t" id="fTax" inputmode="numeric" value="${d.tax.amount || ""}" placeholder="円" style="text-align:right"></div>
+      <div class="tot"><span>合計</span><span id="fTot"></span></div>
+    </div>
+    <div class="diff" id="dSum"></div>
+    <div class="row" style="justify-content:space-between;margin-top:10px">
+      <div class="row">${d.id ? `<button class="btn warn" id="dDel">この記録を消す</button>` : ""}${d.pid ? `<button class="btn warn" id="dDrop">捨てる</button>` : ""}<button class="btn" id="dCancel">${d.pid ? "あとで" : "やめる"}</button></div>
+      <button class="btn main" id="dSave">${d.id ? "保存する" : "家計簿に書き込む"}</button>
+    </div>`);
+  const P = $("panel");
+  if ($("dThumb")) $("dThumb").onclick = async () => {
+    const b = d.full || (d.hasImg && d.id ? await store.getImg(d.id) : null);
+    if (!b) { toast("大きい画像は保存されていません"); return; }
+    const v = document.createElement("div"); v.className = "imgview";
+    const u = URL.createObjectURL(b); v.innerHTML = `<img src="${u}" alt=""><button class="btn">閉じる</button>`;
+    v.onclick = () => { URL.revokeObjectURL(u); v.remove(); }; document.body.appendChild(v);
+  };
+  if ($("dReport")) $("dReport").onclick = () => openReport(`${d.date} ${d.store}\n` + (d.items || []).map(it => `${it.name} ${it.price}円 [${it.cat}]`).join("\n"));
+  const sync = () => { d.date = $("dDate").value || todayStr(); d.store = $("dStore").value.trim(); d.pay = $("dPay").value.trim(); };
+  if ($("dPayChips")) $("dPayChips").onclick = ev => {
+    const b = ev.target.closest("[data-pay]"); if (!b) return;
+    b.classList.toggle("on");
+    $("dPay").value = [...$("dPayChips").querySelectorAll("button.on")].map(x => x.dataset.pay).join("・");
+  };
+  P.querySelectorAll("[data-k]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
+    const it = d.items[+el.dataset.i];
+    if (el.dataset.k === "price") { it.price = Math.round(Number(el.value.replace(/[^\d-]/g, "")) || 0); updSum(); }
+    else { it[el.dataset.k] = el.value; if (el.dataset.k === "cat") { el.classList.toggle("unset", el.value === UNSET); delete it.guess; } }
+  }));
+  const num = v => Math.max(0, Math.round(Number(String(v).replace(/[^\d]/g, "")) || 0));
+  const updSum = () => {
+    d.bag = { has: $("fBag").value === "1", price: num($("fBagP").value) }; d.tax = { amount: num($("fTax").value), incl: $("fTaxI").value === "1" };
+    $("fBagP").style.visibility = d.bag.has ? "" : "hidden";
+    const sub = d.items.reduce((a, it) => a + (Number(it.price) || 0), 0), tot = entrySum(d), df = d.total ? d.total - tot : 0;
+    $("fSub").textContent = yen(sub);
+    $("fTot").innerHTML = yen(tot) + (d.tax.incl && d.tax.amount ? `<span class="muted" style="font-size:12px;font-weight:400">（うち消費税 ${yen(d.tax.amount)}）</span>` : "");
+    const un = d.items.filter(it => fixCat(it.cat) === UNSET).length;
+    $("dSum").className = "diff" + (df || un ? " bad" : "");
+    $("dSum").innerHTML = (d.total ? `レシートの合計 <b>${yen(d.total)}</b>` + (df ? `<br>差が ${yen(df)} あります（読み違いなど）。<button class="btn sm" id="dFix">差を「調整」として足す</button>` : "　✓ 合っています") : "")
+      + (un ? `${d.total ? "<br>" : ""}費目が「未設定」の商品が ${un} 個あります。分かれば選んでください（そのままでも書き込めます）。` : "");
+    $("dSum").classList.toggle("hidden", !d.total && !un);
+    bindFix(); };
+  ["fBag", "fTaxI"].forEach(id => $(id).onchange = updSum); ["fBagP", "fTax"].forEach(id => $(id).oninput = updSum);
+  P.querySelectorAll("select[data-k=cat]").forEach(el => el.addEventListener("change", updSum));
+  const bindFix = () => { const b = $("dFix"); if (b) b.onclick = () => { sync(); const s = entrySum(d);
+    const big = d.items.slice().sort((a, b) => b.price - a.price)[0]; d.items.push({ name: "調整", price: d.total - s, cat: big ? fixCat(big.cat) : UNSET }); renderDraft(); }; };
+  updSum();
+  P.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { sync(); d.items.splice(+b.dataset.rm, 1); if (!d.items.length) d.items.push({ name: "", price: 0, cat: cats[0] }); renderDraft(); });
+  $("dAdd").onclick = () => { sync(); d.items.push({ name: "", price: 0, cat: d.items[d.items.length - 1]?.cat || cats[0] }); renderDraft(); };
+  $("dAll").onchange = e => { if (!e.target.value) return; sync(); d.items.forEach(it => it.cat = e.target.value); renderDraft(); };
+  $("dCancel").onclick = () => { closePanel(true); if (!nextInQueue()) queue = []; };
+  if ($("dDrop")) $("dDrop").onclick = () => { if (!$("dDrop").dataset.sure) { $("dDrop").dataset.sure = 1; $("dDrop").textContent = "もう一度押すと捨てます"; return; } dropPending(d); closePanel(true); if (!nextInQueue()) queue = []; };
+  if ($("dDel")) $("dDel").onclick = () => {
+    if ($("dDel").dataset.sure) { state.entries = state.entries.filter(x => x.id !== d.id); store.delImgs([d.id]); save(); closePanel(); render(); toast("消しました"); }
+    else { $("dDel").dataset.sure = 1; $("dDel").textContent = "もう一度押すと消えます"; }
+  };
+  $("dSave").onclick = () => {
+    sync();
+    const items = d.items.filter(it => it.name.trim() || it.price).map(it => ({ name: it.name.trim() || "品目", price: Math.round(Number(it.price) || 0), cat: fixCat(it.cat), ...(it.disc ? { disc: it.disc } : {}), ...(it.raw ? { raw: it.raw } : {}) }));
+    state.dict = state.dict || {};
+    items.forEach(it => { if (it.cat !== UNSET && it.name !== "調整") state.dict[normName(it.raw || it.name)] = { name: it.name, cat: it.cat }; });
+    if (!items.length) { toast("金額を入れてください"); return; }
+    updSum();
+    const isNew = !d.id;
+    const e = { id: d.id || uid(), date: d.date, store: d.store, items, total: d.total || 0, pay: d.pay, bag: d.bag, tax: d.tax, memo: d.memo || "", thumb: d.thumb || "", hasImg: !!d.hasImg, created: d.created || Date.now() };
+    if (d.full) { e.hasImg = true; store.putImg(e.id, d.full).then(ok => { if (!ok) { e.hasImg = false; save(); } updImgInfo(); }); }
+    state.entries = state.entries.filter(x => x.id !== e.id).concat(e);
+    if (d.pid) dropPending(d);
+    save();
+    month = e.date.slice(0, 7);
+    flashKey = new Set([e.id, ...lines(e).map(it => +e.date.slice(8, 10) + "|" + it.cat), ...lines(e).map(it => "c|" + it.cat)]);
+    closePanel(true); render();
+    toast(isNew ? `${yen(entrySum(e))} を書き込みました` : "保存しました");
+    if (nextInQueue()) return;
+    const cell = document.querySelector("#sheet .flash"); if (cell) cell.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  };
+}
+
+function showCell(d, c) {
+  const dateS = `${month}-${pad(d)}`;
+  const rows = [];
+  monthEntries().filter(e => e.date === dateS).forEach(e => lines(e).forEach(it => { if (fixCat(it.cat) === c) rows.push({ e, it }); }));
+  if (!rows.length) return;
+  openPanel(`<h2>${+month.slice(5)}月${d}日・${esc(c)}</h2>
+    ${rows.map(({ e, it }) => `<div class="entry" data-e="${e.id}"><div class="b"><div class="s">${esc(it.name)}</div><div class="muted">${esc(e.store)}</div></div><div class="a">${yen(it.price)}</div></div>`).join("")}
+    <p class="muted">行を押すとそのレシートを直せます。</p><div class="row" style="justify-content:flex-end"><button class="btn" id="cClose">閉じる</button></div>`);
+  $("cClose").onclick = closePanel;
+}
+
+// ===== ひな形の読み込み =====
+async function onTplFile(file) {
+  if (!file) return;
+  if (!isImg(file)) { $("tplStatus").innerHTML = `<p class="err">画像のファイルを選んでください。</p>`; return; }
+  if (!sample) { $("tplStatus").innerHTML = `<p class="err">${ERR.no_key}</p>`; return; }
+  $("tplStatus").innerHTML = `<div class="spin"></div><p style="text-align:center;margin:0">写真を開いています…</p>`;
+  let im; try { im = await loadImage(file); } catch (e) { $("tplStatus").innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  $("tplStatus").innerHTML = `<img class="thumb" style="margin-top:10px" src="${shrink(im, 600, .7).dataUrl()}" alt=""><div class="spin"></div><p style="text-align:center;margin:0"><b>家計簿の形を読み取っています…</b></p>`;
+  try {
+    const t = await readTemplate(await shrink(im, 2400, .9).toBlob());
+    state.tpl = t; save();
+    $("tplStatus").innerHTML = `<p class="note" style="margin-top:10px">✓ 「${esc(t.title)}」の形で表を作りました（費目 ${t.categories.length}個）。下で直せます。<br><button class="btn sm main" id="seeBook" style="margin-top:6px">家計簿を見る</button></p>`;
+    $("seeBook").onclick = () => { ui().topBig = false; save(); applyLayout(); $("bookArea").scrollIntoView({ behavior: "smooth" }); };
+    render();
+  } catch (e) {
+    $("tplStatus").innerHTML = `<p class="err">${esc(e && e.code === "refused" && e.message ? "読み取れませんでした：" + e.message : errMsg(e))}</p><p class="muted">うまくいかないときのコツ：家計簿の1ページ全体が入るように、真上から明るい場所で撮る／見出し（費目の行）がはっきり写るようにする／スクリーンショットがあればそちらを使う。</p>`;
+  }
+}
+
+// ===== 操作のつなぎこみ =====
+$("camFile").onchange = e => { onReceiptFile(e.target.files[0], "camera"); e.target.value = ""; };
+$("picFile").onchange = e => {
+  const fs = [...e.target.files]; e.target.value = "";
+  if (fs.length > 1 && !plus().batch) {
+    openPanel(`<h2>⭐ まとめて読み取りは有料オプションです</h2><p>写真を2枚以上選んで裏でまとめて読む機能は、有料オプションです。今回は<b>1枚目だけ</b>をすぐ読むこともできます。</p><p class="muted">テスト版のあいだは「⚙ 設定」の「⭐ 有料オプション」で使えるようになります。</p>
+      <div class="row" style="justify-content:flex-end"><button class="btn" id="plusGo">設定を開く</button><button class="btn main" id="plusOne">1枚目だけ読む</button></div>`);
+    $("plusGo").onclick = () => { closePanel(true); goPage("tpl"); };
+    $("plusOne").onclick = () => { closePanel(true); onReceiptFile(fs[0]); };
+    return;
+  }
+  if (fs.length > 1) addJobs(fs); else onReceiptFile(fs[0]);
+};
+$("tplFile").onchange = e => { onTplFile(e.target.files[0]); e.target.value = ""; };
+$("tplCam").onchange = e => { onTplFile(e.target.files[0]); e.target.value = ""; };
+function pasteHandler(fn) {
+  return e => {
+    e.preventDefault();
+    const f = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"))?.getAsFile();
+    e.target.textContent = e.target.dataset.txt;
+    if (f) fn(f); else toast("画像が見つかりませんでした");
+  };
+}
+$("tplPaste").dataset.txt = $("tplPaste").textContent;
+$("tplPaste").addEventListener("paste", pasteHandler(onTplFile));
+document.addEventListener("paste", e => { if (e.target.closest && e.target.closest(".paste, input, .panel")) return; const f = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"))?.getAsFile(); if (f) { e.preventDefault(); tab === "tpl" ? onTplFile(f) : tab === "bank" ? onBankFile(f) : onReceiptFile(f); } });
+["dragover", "drop"].forEach(t => document.addEventListener(t, e => {
+  if (!e.dataTransfer?.types?.includes("Files")) return; e.preventDefault();
+  if (t === "drop") { const f = e.dataTransfer.files[0]; tab === "tpl" ? onTplFile(f) : tab === "bank" ? onBankFile(f) : onReceiptFile(f); }
+}));
+
+$("menu").addEventListener("click", e => { const b = e.target.closest("[data-page]"); if (b) goPage(b.dataset.page); });
+$("histBack").onclick = () => histMove(-1);
+$("histFwd").onclick = () => histMove(1);
+$("bigSw").onclick = () => { resetSplit(); if (tab === "home") ui().big = !ui().big; else ui().topBig = !ui().topBig; save(); applyLayout(); if (tab === "chart") renderCharts(); };
+// ===== 🔑 AIの設定 =====
+function keyStatus() {
+  const k = GEM.get(), el = $("keyState"); if (!el) return;
+  el.className = "keystate " + (k ? "ok" : "ng");
+  el.textContent = k ? `✓ 鍵は設定済みです（末尾 …${k.slice(-4)}）` : "まだ鍵が設定されていません";
+  $("keyDel").classList.toggle("hidden", !k);
+  if (!k) $("keyHow").open = true;
+  $("aiModel").value = ui().aiModel || "fast";
+}
+function openKeySettings() { goPage("tpl"); setTimeout(() => { $("keyCard").scrollIntoView({ block: "start" }); }, 50); }
+$("keyEye").onclick = () => { const i = $("keyInput"), on = i.type === "password"; i.type = on ? "text" : "password"; $("keyEye").textContent = on ? "かくす" : "表示"; };
+$("keySave").onclick = async () => {
+  const k = $("keyInput").value.trim().replace(/\s+/g, "");
+  if (!k) { $("keyMsg").textContent = "鍵を貼り付けてください。"; return; }
+  const old = GEM.get();
+  if (!GEM.set(k)) { $("keyMsg").textContent = "この端末に保存できませんでした（プライベートモードでは保存できません）。"; return; }
+  $("keySave").disabled = true; $("keyMsg").textContent = "Geminiにつながるか試しています…";
+  try { await gemText.test(); $("keyInput").value = ""; $("keyMsg").textContent = "✓ つながりました！AIでレシートを読めます。"; }
+  catch (e) { const ng = e && (e.code === "bad_key" || e.code === "key_denied"); if (ng) GEM.set(old); else $("keyInput").value = ""; $("keyMsg").textContent = (ERR[e && e.code] || "うまくいきませんでした。") + (ng ? "" : "（鍵は保存しました。つながったときに、レシートを読んで試してください）"); }
+  finally { $("keySave").disabled = false; refreshAI(); if (sample && (state.jobs || []).length) runJobs(); }
+};
+$("keyDel").onclick = e => {
+  if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = "もう一度押すと消えます"; return; }
+  delete e.target.dataset.sure; e.target.textContent = "この端末から鍵を消す";
+  GEM.set(""); refreshAI(); $("keyMsg").textContent = "この端末から鍵を消しました。Google側の鍵は残るので、また貼り付ければ使えます。";
+};
+$("aiModel").onchange = e => { ui().aiModel = e.target.value; save(); toast(e.target.value === "accurate" ? "正確さ優先にしました" : "速さ優先にしました"); };
+
+// ===== AIの答えを報告（Google Playの決まり：AIの不適切な答えを報告できること） =====
+const CONTACT = "breaklight.ichi@gmail.com";
+function openReport(summary, onBack) {
+  const keepD = draft; const back = onBack || (() => { if (keepD) { draft = keepD; renderDraft(); } else closePanel(); });
+  openPanel(`<h2>AIの答えを報告</h2><p class="muted" style="margin-top:0">不適切な答えや、ひどい読み間違いを運営者に知らせます。送るのは、選んだ理由・書いた文・AIの答えの要約だけで、画像は送りません。</p>
+    <label class="f">理由</label><select class="t" id="rpWhy"><option>不適切・不快な内容</option><option>ひどい読み間違い</option><option>関係のない答え</option><option>その他</option></select>
+    <label class="f">くわしく（なくてもよい）</label><textarea class="t" id="rpText" rows="3" style="width:100%;box-sizing:border-box"></textarea>
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="rpBack">やめる</button><button class="btn" id="rpCopy">文をコピー</button><button class="btn main" id="rpMail">メールで送る</button></div>`);
+  const body = () => `理由：${$("rpWhy").value}\n内容：${$("rpText").value}\n\nAIの答え（要約）：\n${summary}\n\nアプリ：AIレシート家計簿 v${APP_VER} / AI：${(GEM.last && GEM.last.model) || "-"}`;
+  $("rpBack").onclick = back;
+  $("rpMail").onclick = () => { setTimeout(back, 600); location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("AIの答えの報告（AIレシート家計簿）")}&body=${encodeURIComponent(body())}`; };
+  $("rpCopy").onclick = async () => { try { await navigator.clipboard.writeText(body()); toast(`コピーしました。${CONTACT} に送ってください`); back(); } catch (e) { toast(CONTACT + " に送ってください"); } };
+}
+const APP_VER = "1";
+$("plusBatch").onchange = e => { plus().batch = e.target.checked; save(); toast(e.target.checked ? "まとめて読み取りをONにしました" : "まとめて読み取りをOFFにしました"); };
+$("plusPay").onchange = e => { plus().pay = e.target.checked; save(); };
+$("plusForm").onchange = e => { plus().form = e.target.checked; save(); };
+$("plusLoan").onchange = e => { state.loanInTable = e.target.checked; save(); render(); };
+$("uiFont").onchange = e => { ui().font = e.target.value; save(); render(); };
+$("uiVert").onchange = e => { ui().vert = !!e.target.value; save(); render(); toast(ui().vert ? "表を縦表示にしました" : "表を横表示にしました"); };
+$("uiTop").onchange = e => { ui().top = e.target.value; resetSplit(); save(); render(); };
+$("ymY").onclick = e => { e.stopPropagation(); openYM("y"); };
+$("ymM").onclick = e => { e.stopPropagation(); openYM("m"); };
+$("ymPop").onclick = e => { const b = e.target.closest("[data-ym]"); if (b) { $("ymPop").classList.add("hidden"); setMonth(b.dataset.ym); } };
+document.addEventListener("click", e => { if (!e.target.closest("#ymPop")) $("ymPop").classList.add("hidden"); });
+
+$("sheet").addEventListener("click", e => { const td = e.target.closest("td.cell"); if (!td) return; if (td.dataset.e) openEntry(td.dataset.e); else if (td.textContent) showCell(+td.dataset.d, td.dataset.c); });
+$("entries").addEventListener("click", e => { const r = e.target.closest(".entry"); if (r) openEntry(r.dataset.e); });
+$("panel").addEventListener("click", e => { const r = e.target.closest(".entry[data-e]"); if (r && !draft) openEntry(r.dataset.e); });
+$("addManual").onclick = () => { draft = { id: null, thumb: "", date: month === todayStr().slice(0, 7) ? todayStr() : month + "-01", store: "", items: [{ name: "", price: 0, cat: catNames()[0] }], total: 0, pay: "" }; renderDraft(); };
+
+$("sheet").addEventListener("change", e => {
+  const n = e.target.dataset && e.target.dataset.bud; if (n === undefined) return;
+  const c = state.tpl.categories.find(x => x.name === n); if (!c) return;
+  c.budget = Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0) || null; save(); render();
+});
+$("mCarry").onchange = e => setIncome("carry", e.target.value);
+$("mSalary").onchange = e => setIncome("salary", e.target.value);
+$("mOther").onchange = e => setIncome("other", e.target.value);
+$("incXBody").addEventListener("change", e => {
+  const k = e.target.dataset.ext; if (!k) return;
+  state.income = state.income || {}; const x = state.income[month] = state.income[month] || {}; x.ext = x.ext || {};
+  const v = Math.round(Number(String(e.target.value).replace(/[^\d]/g, "")) || 0); if (v) x.ext[k] = v; else delete x.ext[k];
+  save(); e.target.blur(); render();
+});
+$("mSave").onchange = e => { state.saving = Math.round(Number(String(e.target.value).replace(/[^\d]/g, "")) || 0); save(); e.target.blur(); render(); };
+$("noCarry").onchange = e => { state.noCarry = !e.target.checked; save(); render(); toast(e.target.checked ? "前の月の残りを繰り越します" : "繰越なしにしました（どの月も0円から）"); };
+$("pq").oninput = () => {
+  const q = normName($("pq").value); if (!q) { $("pres").innerHTML = ""; return; }
+  const rows = [];
+  state.entries.forEach(e => e.items.forEach(x => { if (normName(x.name).includes(q) || normName(x.raw || "").includes(q)) rows.push({ e, x }); }));
+  rows.sort((a, b) => b.e.date.localeCompare(a.e.date));
+  if (!rows.length) { $("pres").innerHTML = `<p class="muted">見つかりませんでした。</p>`; return; }
+  const by = {}; rows.forEach(({ e, x }) => { const k = e.store || "（店名なし）"; (by[k] = by[k] || []).push(x.price); });
+  const stores = Object.entries(by).map(([k, v]) => ({ k, min: Math.min(...v), n: v.length })).sort((a, b) => a.min - b.min);
+  $("pres").innerHTML = `<p style="margin:8px 0 4px"><b>いちばん安かったのは ${esc(stores[0].k)} の ${yen(stores[0].min)}</b></p>
+    <div class="tablebox" style="max-height:320px"><table><thead><tr><th>日付</th><th>店</th><th>商品</th><th class="num">値段</th></tr></thead><tbody>${rows.slice(0, 60).map(({ e, x }) =>
+    `<tr><td>${e.date.slice(0, 4) !== todayStr().slice(0, 4) ? e.date.slice(0, 4) + "/" : ""}${md(e.date)}</td><td>${esc(e.store)}</td><td>${esc(x.name)}</td><td class="num">${yen(x.price)}</td></tr>`).join("")}</tbody></table></div>`;
+};
+$("delMonthImgs").onclick = e => {
+  const list = monthEntries().filter(x => x.hasImg); if (!list.length) { toast("この月の画像はありません"); return; }
+  if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = `もう一度押すと${list.length}枚消えます`; return; }
+  store.delImgs(list.map(x => x.id)); list.forEach(x => x.hasImg = false); save();
+  delete e.target.dataset.sure; e.target.textContent = "この月のレシート画像を消す（記録は残す）"; updImgInfo(); toast("画像を消しました（記録は残っています）");
+};
+$("delAllImgs").onclick = () => {
+  const list = state.entries.filter(x => x.hasImg); if (!list.length) { toast("保存している画像はありません"); return; }
+  openPanel(`<h2>すべてのレシート画像を消す</h2><p>保存している${list.length}枚の画像を消します。家計簿の記録（金額など）は残ります。消した画像は元に戻せません。</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">やめる</button><button class="btn warn" id="okDelImgs">${list.length}枚を消す</button></div>`);
+  $("okDelImgs").onclick = () => { store.delImgs(list.map(x => x.id)); list.forEach(x => x.hasImg = false); save(); closePanel(true); updImgInfo(); toast("すべての画像を消しました（記録は残っています）"); };
+};
+$("delAllRecs").onclick = () => {
+  const recs = state.entries.filter(x => !x.fixed && !x.bank && !x.walletAdj);
+  if (!recs.length) { toast("消すレシートの記録はありません"); return; }
+  const imgs = recs.filter(x => x.hasImg).length;
+  openPanel(`<h2>レシートの記録をすべて消す</h2><p>レシート・手で入力した記録 <b>${recs.length}件</b>（画像${imgs}枚）を、すべての月から消します。固定費・通帳から入れた記録、収入、貸し借り、設定は残ります。</p>
+    <p class="err">元に戻せません。念のため、設定の「💾 バックアップ」で書き出してから消すのがおすすめです。</p>
+    <label class="f">消すときは「けす」と入力してください</label><input class="t" id="delWord" autocomplete="off">
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" onclick="closePanel()">やめる</button><button class="btn warn" id="okDelRecs" disabled>すべて消す</button></div>`);
+  $("delWord").oninput = e => { $("okDelRecs").disabled = e.target.value.trim() !== "けす"; };
+  $("okDelRecs").onclick = () => {
+    store.delImgs(recs.filter(x => x.hasImg).map(x => x.id));
+    const ids = new Set(recs.map(x => x.id)); state.entries = state.entries.filter(x => !ids.has(x.id));
+    save(); closePanel(true); render(); updImgInfo(); toast(`${recs.length}件の記録を消しました`);
+  };
+};
+$("tplTitle").oninput = e => { state.tpl.title = e.target.value.slice(0, 24) || "家計簿"; save(); $("sheetTitle").textContent = state.tpl.title; };
+$("tplLayout").onchange = e => { state.tpl.layout = e.target.value; save(); render(); };
+$("cats").addEventListener("click", e => {
+  const b = e.target.closest("[data-del]"); if (!b) return;
+  if (state.tpl.categories.length <= 1) { toast("費目は1つ以上必要です"); return; }
+  state.tpl.categories.splice(+b.dataset.del, 1); save(); $("cats").blur(); document.activeElement?.blur?.(); render();
+});
+$("cats").addEventListener("change", e => {
+  const i = e.target.dataset.b; if (i === undefined) return;
+  const v = Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0); state.tpl.categories[+i].budget = v || null; save(); e.target.blur(); render();
+});
+$("cats").addEventListener("click", e => {
+  const t = e.target.closest("[data-ren]"); if (!t) return;
+  const i = +t.dataset.ren, old = state.tpl.categories[i].name;
+  openPanel(`<h2>費目の名前を変える</h2><label class="f">新しい名前</label><input class="t" id="renName" value="${esc(old)}" maxlength="12">
+    <p class="muted" style="font-size:13px">今までの記録・覚えた費目・固定費・通帳の分類も、新しい名前に変わります。</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">やめる</button><button class="btn main" id="renOk">変える</button></div>`);
+  $("renOk").onclick = () => {
+    const n = $("renName").value.trim().slice(0, 12); if (!n || n === old) { closePanel(); return; }
+    if (catNames().includes(n)) { toast("同じ名前の費目がもうあります"); return; }
+    state.tpl.categories[i].name = n;
+    const fix = o => { if (o && o.cat === old) o.cat = n; };
+    state.entries.forEach(e => (e.items || []).forEach(fix)); (state.pending || []).forEach(d => (d.items || []).forEach(fix));
+    Object.values(state.dict || {}).forEach(fix); (state.fixed || []).forEach(fix); Object.values(state.bankDict || {}).forEach(fix);
+    save(); closePanel(true); render(); toast(`「${old}」を「${n}」に変えました`);
+  };
+});
+$("addCat").onclick = () => {
+  const n = $("newCat").value.trim().slice(0, 12); if (!n) return;
+  if (catNames().includes(n)) { toast("同じ費目があります"); return; }
+  const oi = catNames().indexOf("その他");
+  state.tpl.categories.splice(oi >= 0 ? oi : state.tpl.categories.length, 0, { name: n, budget: null });
+  $("newCat").value = ""; save(); render();
+};
+$("resetTpl").onclick = e => {
+  if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = "もう一度押すと戻ります"; return; }
+  state.tpl = structuredClone(DEFAULT_TPL); save(); delete e.target.dataset.sure; e.target.textContent = "最初のひな形に戻す"; $("tplStatus").innerHTML = ""; render(); toast("最初のひな形に戻しました");
+};
+$("wipe").onclick = e => {
+  if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = "もう一度押すと全部消えます"; return; }
+  store.delImgs(state.entries.map(x => x.id)); state.entries = []; save(); delete e.target.dataset.sure; e.target.textContent = "記録をすべて消す"; render(); toast("記録を消しました");
+};
+
+$("csv").onclick = async () => {
+  const rows = [["日付", "店名", "品目", "費目", "金額", "支払い"]];
+  monthEntries().forEach(e => lines(e).forEach(it => rows.push([e.date, e.store, it.name, fixCat(it.cat), it.price, e.pay])));
+  const csv = "﻿" + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const filename = `家計簿_${month}.csv`;
+  const dl = window.claude ? await claude.use("downloads").catch(() => null) : null;
+  if (dl) { try { await dl.save({ filename, data: new Blob([csv], { type: "text/csv" }) }); } catch (e) {} return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = filename; a.click();
+};
+
+// ===== 書き出し（Excel・PDF） =====
+// 表示中の家計簿の表を、文字の2次元配列にする（入力欄は中の数字）
+function sheetData(ym) {
+  const keep = month, kf = flashKey; flashKey = null;
+  if (ym !== month) { month = ym; const T = totals(); renderSheet(T, +ym.slice(0, 4), +ym.slice(5)); }
+  const t = $("sheet").querySelector("table"), rows = [];
+  const kinds = [];
+  if (t) [["thead", "h"], ["tbody", "b"], ["tfoot", "f"]].forEach(([sec, k]) => t.querySelectorAll(sec + " tr").forEach(tr => {
+    rows.push([...tr.cells].map(td => { const inp = td.querySelector("input"); const v = (inp ? inp.value : td.innerText).replace(/⋮⋮/g, "").replace(/\s+/g, " ").trim(); return v; })); kinds.push(k);
+  }));
+  if (ym !== keep) { month = keep; render(); }
+  flashKey = kf;
+  return { rows, kinds };
+}
+const toNum = v => { const x = String(v).replace(/[¥,\s]/g, "").replace(/^[−-]/, "-"); return /^-?\d+$/.test(x) ? Number(x) : null; };
+function detailRows(yms) {
+  const r = [["日付", "店名", "品目", "費目", "金額", "支払い", "メモ"]];
+  allE().filter(e => yms.includes(e.date.slice(0, 7))).sort((a, b) => a.date.localeCompare(b.date) || a.created - b.created)
+    .forEach(e => lines(e).forEach(it => r.push([e.date, e.store || "", it.name || "", fixCat(it.cat), it.price, e.pay || "", e.memo || ""])));
+  return r;
+}
+function moneyRows(yms) {
+  if (yms.length > 1) { const has = new Set(allE().map(e => e.date.slice(0, 7))); yms = yms.filter(ym => has.has(ym) || incOf(ym)); }
+  const r = [["月", "前月からの繰越", "給与（手取り）", "その他の収入", "通帳からの収入", "貯金", "支出合計", "残り"]];
+  yms.forEach(ym => { const x = (state.income || {})[ym] || {}, c = carryOf(ym).v, sp = spendOf(ym);
+    r.push([`${+ym.slice(0, 4)}年${+ym.slice(5)}月`, c, x.salary || 0, x.other || 0, bankInc(ym), saveOf(ym), sp, c + incOf(ym) - saveOf(ym) - sp]); });
+  return r;
+}
+const exYms = () => $("exRange").value === "y" ? Array.from({ length: 12 }, (_, i) => `${month.slice(0, 4)}-${pad(i + 1)}`) : [month];
+async function saveBlob(blob, filename) {
+  const dl = window.claude ? await claude.use("downloads").catch(() => null) : null;
+  if (dl) { try { await dl.save({ filename, data: blob }); return; } catch (e) {} }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+// --- 小さなZIP（無圧縮）と .xlsx 作成 ---
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u => { let c = 0xffffffff; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  for (const [name, text] of files) {
+    const n = enc.encode(name), d = typeof text === "string" ? enc.encode(text) : text, c = crc32(d);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint32(14, c, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, n.length, true);
+    parts.push(new Uint8Array(h.buffer), n, d);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true); cd.setUint16(8, 0x0800, true);
+    cd.setUint32(16, c, true); cd.setUint32(20, d.length, true); cd.setUint32(24, d.length, true); cd.setUint16(28, n.length, true); cd.setUint32(42, off, true);
+    cen.push(new Uint8Array(cd.buffer), n); off += 30 + n.length + d.length;
+  }
+  const cs = cen.reduce((a, x) => a + x.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+const xesc = v => String(v).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+function colName(i) { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = (i - 1 - m) / 26; } return s; }
+// sheets: [{ name, rows, bold: Set(行番号), numCols: 数字にする列 }]
+function makeXlsx(sheets) {
+  const sx = sheets.map(sh => {
+    const widths = [];
+    const body = sh.rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => {
+      const ref = colName(ci) + (ri + 1), bold = sh.bold && sh.bold.has(ri);
+      const len = String(v ?? "").length * (/[^\x00-\x7f]/.test(String(v ?? "")) ? 2 : 1); widths[ci] = Math.max(widths[ci] || 6, Math.min(40, len + 2));
+      const n = typeof v === "number" ? v : (sh.numify && ri > 0 ? toNum(v) : null);
+      if (n !== null && v !== "" && v != null) return `<c r="${ref}" s="${bold ? 3 : 2}"><v>${n}</v></c>`;
+      if (v === "" || v == null) return bold ? `<c r="${ref}" s="1"/>` : "";
+      return `<c r="${ref}" t="inlineStr" s="${bold ? 1 : 0}"><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;
+    }).join("")}</row>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols><sheetData>${body}</sheetData></worksheet>`;
+  });
+  const names = sheets.map((sh, i) => xesc(sh.name.replace(/[\[\]:*?\/\\]/g, "").slice(0, 31) || "Sheet" + (i + 1)));
+  return zip([
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sx.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${names.map((n, i) => `<sheet name="${n}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sx.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sx.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Yu Gothic"/></font><font><b/><sz val="11"/><name val="Yu Gothic"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6F2EA"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="3" fontId="1" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`],
+    ...sx.map((x, i) => [`xl/worksheets/sheet${i + 1}.xml`, x])
+  ]);
+}
+function boldSet(kinds) { const b = new Set(); kinds.forEach((k, i) => { if (k !== "b") b.add(i); }); return b; }
+$("exXlsx").onclick = async () => {
+  const yms = exYms(), Y = month.slice(0, 4), sheets = [];
+  $("exStatus").textContent = "作っています…";
+  const monthsWithData = yms.length === 1 ? yms : yms.filter(ym => spendOf(ym) || incOf(ym));
+  for (const ym of monthsWithData) { const d = sheetData(ym); sheets.push({ name: `${+ym.slice(5)}月の表`, rows: d.rows, bold: boldSet(d.kinds), numify: true }); }
+  const det = detailRows(yms); sheets.push({ name: "明細", rows: det, bold: new Set([0]) });
+  sheets.push({ name: "収入と繰越", rows: moneyRows(yms), bold: new Set([0]) });
+  const fn = yms.length === 1 ? `家計簿_${month}.xlsx` : `家計簿_${Y}年.xlsx`;
+  await saveBlob(makeXlsx(sheets), fn);
+  $("exStatus").textContent = `✓ ${fn} を保存しました（シート${sheets.length}枚）`;
+};
+$("exCsv").onclick = async () => {
+  const yms = exYms(), rows = detailRows(yms);
+  const csv = "\ufeff" + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const fn = yms.length === 1 ? `家計簿_${month}.csv` : `家計簿_${month.slice(0, 4)}年.csv`;
+  await saveBlob(new Blob([csv], { type: "text/csv" }), fn); $("exStatus").textContent = `✓ ${fn} を保存しました`;
+};
+// --- 提出用の家計表（1か月1枚） ---
+function formRows(ym) {
+  const x = (state.income || {})[ym] || {}, ex = x.ext || {}, c = carryOf(ym).v, bi = bankInc(ym), sv = saveOf(ym), sp = spendOf(ym);
+  const byCat = {}; allE().filter(e => e.date.slice(0, 7) === ym).forEach(e => lines(e).forEach(it => { const k = fixCat(it.cat); byCat[k] = (byCat[k] || 0) + it.price; }));
+  const f = v => v ? (v < 0 ? "−" : "") + Math.abs(Math.round(v)).toLocaleString("ja-JP") + " 円" : "円";
+  const { L, salary } = incomeNames();
+  const inc = L.map(n => [n, n === salary ? (x.salary || 0) + bi : incKind(n) === "carry" ? c : incKind(n) === "other" ? (x.other || 0) : (ex[n] || 0)]);
+  const cats = [...catNames().filter(k => !/繰り?越/.test(k)), ...[UNSET, EXTRA, LOANCAT].filter(k => byCat[k])];
+  const left = c + (x.salary || 0) + bi + extOf(ym) + (x.other || 0) - sv - sp;
+  const out = [...cats.map(k => [k, byCat[k] || 0]), ...(sv ? [["貯金", sv]] : []), ["翌月への繰り越し", left]];
+  const n = Math.max(inc.length, out.length), rows = [["収入", "", "支出", ""], ["種別", "金額", "費目", "金額"]], kinds = ["h", "h"];
+  for (let i = 0; i < n; i++) { const a = inc[i], b = out[i]; rows.push([a ? a[0] : "", a ? f(a[1]) : "", b ? b[0] : "", b ? f(b[1]) : ""]); kinds.push("b"); }
+  const totIn = inc.reduce((s, r) => s + r[1], 0), totOut = out.reduce((s, r) => s + r[1], 0);
+  rows.push(["収入合計", f(totIn), "支出合計", f(totOut)]); kinds.push("f");
+  return { rows, kinds };
+}
+$("exForm").onclick = async () => {
+  if (!plus().form) {
+    openPanel(`<h2>⭐ 提出用の家計表は有料オプションです</h2><p>手元の家計簿用紙と同じ欄で、毎月の家計表をPDFにして印刷できる機能は、有料オプションです。</p><p class="muted">テスト版のあいだは「⚙ 設定」の「⭐ 有料オプション」で使えるようになります。</p>
+      <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">閉じる</button><button class="btn main" id="plusGo2">設定を開く</button></div>`);
+    $("plusGo2").onclick = () => { closePanel(true); goPage("tpl"); };
+    return;
+  }
+  const yms = exYms(), Y = month.slice(0, 4);
+  const list = yms.length === 1 ? yms : yms.filter(ym => spendOf(ym) || incOf(ym));
+  if (!list.length) { $("exStatus").textContent = "この範囲には記録がありません"; return; }
+  $("exStatus").textContent = "提出用の家計表を作っています…";
+  try {
+    const pages = [];
+    for (const ym of list) {
+      const d = formRows(ym);
+      const yy = +ym.slice(0, 4);
+      const c = drawTable(`家計簿　（令和${yy - 2018}年${+ym.slice(5)}月分／${yy}年）`, "氏名：＿＿＿＿＿＿＿＿＿＿＿＿＿＿", d.rows, d.kinds, [190, 120, 190, 120], [1, 3]);
+      pages.push({ jpg: await canvasJpeg(c), w: c.width / 2, h: c.height / 2, pw: c.width, ph: c.height, land: false });
+      // 2枚目：日ごとの表（明細の裏付けとして）
+      const mr = moneyRows([ym])[1];
+      (await tablePages(`${state.tpl.title}　${+ym.slice(0, 4)}年${+ym.slice(5)}月（日ごとの支出）`, `支出の合計 ${yen(mr[6])}`, sheetData(ym))).forEach(p => pages.push(p));
+    }
+    const fn = yms.length === 1 ? `家計表_${month}.pdf` : `家計表_${Y}年.pdf`;
+    await saveBlob(jpegPdf(pages), fn);
+    $("exStatus").textContent = `✓ ${fn} を保存しました（${pages.length}ページ）。印刷して使う前に、提出先の書式と合っているか確かめてください。`;
+  } catch (e) { $("exStatus").textContent = "PDFを作れませんでした：" + (e && e.message || e); }
+};
+// --- PDF：表を絵にして、A4のPDFに貼る（日本語の文字もそのまま） ---
+function drawTable(title, sub, rows, kinds, minW, rightCols) {
+  const S = 2, F = 13, PADX = 7, RH = 24, font = w => `${w} ${F}px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif`;
+  const m = document.createElement("canvas").getContext("2d");
+  const nc = Math.max(...rows.map(r => r.length));
+  const cw = Array(nc).fill(30);
+  (minW || []).forEach((x, i) => { cw[i] = Math.max(cw[i] || 0, x); });
+  rows.forEach((r, ri) => r.forEach((v, ci) => { m.font = font(kinds[ri] !== "b" ? "bold" : "normal"); cw[ci] = Math.max(cw[ci], Math.ceil(m.measureText(v).width) + PADX * 2); }));
+  const W = cw.reduce((a, x) => a + x, 0), TH = sub ? 56 : 36;
+  const c = document.createElement("canvas"); c.width = (W + 2) * S; c.height = (TH + rows.length * RH + 2) * S;
+  const g = c.getContext("2d"); g.scale(S, S); g.fillStyle = "#fff"; g.fillRect(0, 0, W + 2, TH + rows.length * RH + 2);
+  g.fillStyle = "#26302b"; g.font = `bold 18px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif`; g.textBaseline = "middle"; g.fillText(title, 1, 14);
+  if (sub) { g.font = font("normal"); g.fillStyle = "#555"; g.fillText(sub, 1, 38); }
+  rows.forEach((r, ri) => {
+    const y = TH + ri * RH; let x = 1;
+    if (kinds[ri] !== "b") { g.fillStyle = "#e6f2ea"; g.fillRect(1, y, W, RH); }
+    r.forEach((v, ci) => {
+      g.font = font(kinds[ri] !== "b" ? "bold" : "normal"); g.fillStyle = "#26302b";
+      const num = (toNum(v) !== null && ci > 0) || (rightCols && rightCols.includes(ci) && kinds[ri] !== "h");
+      g.textAlign = num ? "right" : (kinds[ri] === "h" ? "center" : "left");
+      g.fillText(v, num ? x + cw[ci] - PADX : kinds[ri] === "h" ? x + cw[ci] / 2 : x + PADX, y + RH / 2 + 1);
+      x += cw[ci];
+    });
+    g.textAlign = "left";
+  });
+  g.strokeStyle = "#cfcabd"; g.lineWidth = .7;
+  for (let ri = 0; ri <= rows.length; ri++) { g.beginPath(); g.moveTo(1, TH + ri * RH); g.lineTo(W + 1, TH + ri * RH); g.stroke(); }
+  let x = 1; for (let ci = 0; ci <= nc; ci++) { g.beginPath(); g.moveTo(x, TH); g.lineTo(x, TH + rows.length * RH); g.stroke(); x += cw[ci] || 0; }
+  return c;
+}
+function jpegPdf(pages) { // pages: [{ jpg: Uint8Array, w, h, land }]
+  const enc = new TextEncoder(), chunks = [], offs = []; let len = 0;
+  const add = x => { const u = typeof x === "string" ? enc.encode(x) : x; chunks.push(u); len += u.length; };
+  const obj = (n, body) => { offs[n] = len; add(`${n} 0 obj\n`); body(); add("\nendobj\n"); };
+  add("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n");
+  const np = pages.length, kids = pages.map((_, i) => `${3 + i * 3} 0 R`).join(" ");
+  obj(1, () => add("<< /Type /Catalog /Pages 2 0 R >>"));
+  obj(2, () => add(`<< /Type /Pages /Kids [${kids}] /Count ${np} >>`));
+  pages.forEach((p, i) => {
+    const n = 3 + i * 3, PW = p.land ? 841.89 : 595.28, PH = p.land ? 595.28 : 841.89, M = 28;
+    const k = Math.min((PW - M * 2) / p.w, (PH - M * 2) / p.h), dw = p.w * k, dh = p.h * k;
+    const cs = `q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${M} ${(PH - M - dh).toFixed(2)} cm /Im0 Do Q`;
+    obj(n, () => add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${n + 2} 0 R >> >> /Contents ${n + 1} 0 R >>`));
+    obj(n + 1, () => add(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+    obj(n + 2, () => { add(`<< /Type /XObject /Subtype /Image /Width ${p.pw} /Height ${p.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`); add(p.jpg); add("\nendstream"); });
+  });
+  const xref = len, total = 3 + np * 3;
+  add(`xref\n0 ${total}\n0000000000 65535 f \n` + Array.from({ length: total - 1 }, (_, i) => String(offs[i + 1]).padStart(10, "0") + " 00000 n \n").join(""));
+  add(`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(chunks, { type: "application/pdf" });
+}
+const canvasJpeg = c => new Promise(r => c.toBlob(b => b.arrayBuffer().then(a => r(new Uint8Array(a))), "image/jpeg", .92));
+async function tablePages(title, sub, d) {
+  // 行が多いときはページを分ける（見出しの行は毎ページに入れる）
+  const head = d.rows.filter((_, i) => d.kinds[i] === "h"), hk = head.map(() => "h");
+  const rest = d.rows.map((r, i) => [r, d.kinds[i]]).filter(([, k]) => k !== "h");
+  const probe = drawTable(title, sub, d.rows, d.kinds), land = probe.width > probe.height * .9;
+  const PW = land ? 841.89 : 595.28, PH = land ? 595.28 : 841.89, k = Math.min((PW - 56) / (probe.width / 2), 1);
+  // 少し縮めれば1ページに収まるなら、分けずに1ページにする
+  if (Math.min((PW - 56) / (probe.width / 2), (PH - 56) / (probe.height / 2)) >= .55) return [{ jpg: await canvasJpeg(probe), w: probe.width / 2, h: probe.height / 2, pw: probe.width, ph: probe.height, land }];
+  const per = Math.max(10, Math.floor(((PH - 56) / k - 60) / 24) - head.length);
+  const out = [];
+  for (let i = 0; i < rest.length || i === 0; i += per) {
+    const part = rest.slice(i, i + per);
+    const c = drawTable(i ? `${title}（つづき）` : title, i ? "" : sub, [...head, ...part.map(x => x[0])], [...hk, ...part.map(x => x[1])]);
+    out.push({ jpg: await canvasJpeg(c), w: c.width / 2, h: c.height / 2, pw: c.width, ph: c.height, land });
+    if (!rest.length) break;
+  }
+  return out;
+}
+$("exPdf").onclick = async () => {
+  const yms = exYms(), Y = month.slice(0, 4);
+  $("exStatus").textContent = "PDFを作っています…";
+  try {
+    let pages = [];
+    const list = yms.length === 1 ? yms : yms.filter(ym => spendOf(ym) || incOf(ym));
+    for (const ym of list) {
+      const mr = moneyRows([ym])[1];
+      const sub = `繰越 ${yen(mr[1])}　収入 ${yen(mr[2] + mr[3] + mr[4])}　貯金 ${yen(mr[5])}　支出 ${yen(mr[6])}　残り ${mr[7] < 0 ? "−" : ""}${yen(Math.abs(mr[7]))}`;
+      pages = pages.concat(await tablePages(`${state.tpl.title}　${+ym.slice(0, 4)}年${+ym.slice(5)}月`, sub, sheetData(ym)));
+    }
+    if (yms.length > 1) { const mr = moneyRows(list); pages = pages.concat(await tablePages(`${Y}年　収入と繰越`, "", { rows: mr.map(r => r.map((v, i) => typeof v === "number" ? v.toLocaleString("ja-JP") : v)), kinds: mr.map((_, i) => i ? "b" : "h") })); }
+    if (!pages.length) { $("exStatus").textContent = "この範囲には記録がありません"; return; }
+    const fn = yms.length === 1 ? `家計簿_${month}.pdf` : `家計簿_${Y}年.pdf`;
+    await saveBlob(jpegPdf(pages), fn);
+    $("exStatus").textContent = `✓ ${fn} を保存しました（${pages.length}ページ）`;
+  } catch (e) { $("exStatus").textContent = "PDFを作れませんでした：" + (e && e.message || e); }
+};
+
+// ===== グラフ =====
+const short = n => { const a = Math.abs(n); return a >= 10000 ? (Math.round(n / 1000) / 10) + "万" : Math.round(n).toLocaleString("ja-JP"); };
+const niceMax = v => { if (v <= 0) return 4000; const st = v / 4, p = Math.pow(10, Math.floor(Math.log10(st))); for (const k of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (k * p >= st) return 4 * k * p; return 40 * p; };
+const mLabel = ym => +ym.slice(5) + "月";
+// 色は費目の順番で固定（8色まで。9個目からは「その他ほか」にまとめる）
+const fits = () => catNames().length <= 8;
+const colorOf = (name) => { if (name === UNSET || name === EXTRA || name === LOANCAT) return "var(--sgray)"; if (name === "その他ほか") return "var(--s8)"; const i = catNames().indexOf(name); return i >= 0 && (fits() || i < 7) ? `var(--s${i + 1})` : "var(--s8)"; };
+const catGroup = name => { if (name === UNSET || name === EXTRA || name === LOANCAT) return name; const i = catNames().indexOf(name); return i >= 0 && (fits() || i < 7) ? name : "その他ほか"; };
+function axisY(W, H, L, T, max) {
+  let g = ""; for (let k = 0; k <= 4; k++) { const v = max * k / 4, y = T + H - H * k / 4;
+    g += `<line class="${k ? "gl" : "base"}" x1="${L}" x2="${W}" y1="${y}" y2="${y}"/><text x="${L - 6}" y="${y + 4}" text-anchor="end">${short(v)}</text>`; }
+  return g;
+}
+const bar = (x, y, w, h, fill, tip, top = true) => h <= 0 ? "" : `<path d="M${x},${y + h}V${y + (top ? Math.min(4, h) : 0)}${top ? `q0,-${Math.min(4, h)} ${Math.min(4, w / 2)},-${Math.min(4, h)}h${w - 2 * Math.min(4, w / 2)}q${Math.min(4, w / 2)},0 ${Math.min(4, w / 2)},${Math.min(4, h)}` : `h${w}`}V${y + h}Z" fill="${fill}" data-tip="${esc(tip)}"/>`;
+function renderCharts() {
+  const W = Math.max(280, $("chMonth").clientWidth || 320), L = 44, T = 8, B = 22;
+  // 1) 月ごとの支出と収入（12か月）
+  const ms = Array.from({ length: 12 }, (_, i) => addMonth(month, i - 11));
+  const sp = ms.map(spendOf), inc = ms.map(incOf), hasInc = inc.some(v => v);
+  let H = 170, max = niceMax(Math.max(...sp, ...inc)), cw = (W - L) / ms.length, bw = Math.max(6, cw * .55);
+  let g = axisY(W, H, L, T, max);
+  ms.forEach((m, i) => {
+    const x = L + i * cw + (cw - bw) / 2, h = sp[i] / max * H;
+    g += `<rect x="${L + i * cw}" y="${T}" width="${cw}" height="${H}" fill="transparent" data-tip="${y4(m)}${mLabel(m)}　支出 ${yen(sp[i])}${hasInc ? `　収入 ${yen(inc[i])}` : ""}"/>`;
+    g += bar(x, T + H - h, bw, h, m === month ? "var(--accent)" : "color-mix(in srgb,var(--accent) 55%,var(--card))", `${y4(m)}${mLabel(m)}　支出 ${yen(sp[i])}${hasInc ? `　収入 ${yen(inc[i])}` : ""}`);
+    if (i % 2 === (ms.length - 1) % 2) g += `<text x="${L + i * cw + cw / 2}" y="${T + H + 16}" text-anchor="middle">${mLabel(m)}</text>`;
+  });
+  if (hasInc) {
+    const pts = ms.map((m, i) => [L + i * cw + cw / 2, T + H - inc[i] / max * H]);
+    for (let i = 1; i < pts.length; i++) if (inc[i] && inc[i - 1]) g += `<line x1="${pts[i - 1][0]}" y1="${pts[i - 1][1]}" x2="${pts[i][0]}" y2="${pts[i][1]}" stroke="var(--s2)" stroke-width="2" pointer-events="none"/>`;
+    g += pts.map((p, i) => !inc[i] ? "" : `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--s2)" stroke="var(--card)" stroke-width="2" pointer-events="none"/>`).join("");
+  }
+  $("chMonth").innerHTML = `<svg viewBox="0 0 ${W} ${T + H + B}">${g}</svg>`;
+  $("lgMonth").innerHTML = `<span><i style="background:var(--accent)"></i>支出</span>${hasInc ? `<span><i class="ln" style="background:var(--s2)"></i>収入</span>` : ""}`;
+
+  // 2) 費目ごとの積み上げ（6か月）
+  const m6 = ms.slice(-6), groups = [];
+  const data = m6.map(m => { const o = {}; allE().filter(e => e.date.slice(0, 7) === m).forEach(e => lines(e).forEach(it => { const k = catGroup(fixCat(it.cat)); o[k] = (o[k] || 0) + it.price; if (!groups.includes(k)) groups.push(k); })); return o; });
+  const order = [...catNames().filter(c => groups.includes(c)), ...["その他ほか", UNSET, EXTRA, LOANCAT].filter(c => groups.includes(c))];
+  const tot = data.map(o => Object.values(o).reduce((a, v) => a + Math.max(0, v), 0));
+  H = 170; max = niceMax(Math.max(...tot)); cw = (W - L) / 6; bw = Math.max(10, cw * .5);
+  g = axisY(W, H, L, T, max);
+  data.forEach((o, i) => {
+    const x = L + i * cw + (cw - bw) / 2; let yTop = T + H;
+    const segs = order.filter(k => o[k] > 0);
+    segs.forEach((k, j) => { const h = o[k] / max * H, gap = j ? 2 : 0; yTop -= h;
+      g += bar(x, yTop, bw, Math.max(0, h - gap), colorOf(k), `${mLabel(m6[i])} ${k}　${yen(o[k])}`, j === segs.length - 1); });
+    g += `<text x="${L + i * cw + cw / 2}" y="${T + H + 16}" text-anchor="middle">${mLabel(m6[i])}</text>`;
+  });
+  $("chStack").innerHTML = order.length ? `<svg viewBox="0 0 ${W} ${T + H + B}">${g}</svg>` : `<p class="muted">まだ記録がありません。</p>`;
+  $("lgStack").innerHTML = order.map(k => `<span><i style="background:${colorOf(k)}"></i>${esc(k)}</span>`).join("");
+
+  // 3) 今月の内訳（横棒）
+  const Tm = totals(), rows = Object.entries(Tm.byCat).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  $("hBreak").textContent = `${mLabel(month)}の費目の内訳`;
+  const mx = Math.max(1, ...rows.map(r => r[1]));
+  $("chBreak").innerHTML = rows.length ? rows.map(([k, v]) => `<div class="bar" data-tip="${esc(k)}　${yen(v)}（${Math.round(v / Tm.sum * 100)}%）"><span class="n">${esc(k)}</span><span class="t"><i style="width:${v / mx * 100}%;background:${colorOf(k)}"></i></span><span>${yen(v)} <span class="muted">${Math.round(v / Tm.sum * 100)}%</span></span></div>`).join("") : `<p class="muted">この月の記録はまだありません。</p>`;
+
+  // 4) 今月のペース（日ごとの累計）
+  const cum = ym => { const [y, m] = ym.split("-").map(Number), n = new Date(y, m, 0).getDate(), a = Array(n).fill(0);
+    allE().filter(e => e.date.slice(0, 7) === ym).forEach(e => a[+e.date.slice(8, 10) - 1] += entrySum(e));
+    for (let i = 1; i < n; i++) a[i] += a[i - 1]; return a; };
+  const prevM = addMonth(month, -1), now = cum(month), pre = cum(prevM);
+  const isCur = month === todayStr().slice(0, 7), upto = isCur ? +todayStr().slice(8, 10) : now.length;
+  H = 160; max = niceMax(Math.max(...now, ...pre)); const dw = (W - L - 8) / 30;
+  const px = i => L + i * dw, py = v => T + H - v / max * H;
+  g = axisY(W, H, L, T, max);
+  [1, 10, 20, 31].forEach(d => g += `<text x="${px(d - 1)}" y="${T + H + 16}" text-anchor="middle">${d}日</text>`);
+  g += `<polyline points="${pre.map((v, i) => px(i) + "," + py(v)).join(" ")}" fill="none" stroke="var(--sgray)" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/>`;
+  g += `<polyline points="${now.slice(0, upto).map((v, i) => px(i) + "," + py(v)).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" pointer-events="none"/>`;
+  if (upto) g += `<circle cx="${px(upto - 1)}" cy="${py(now[upto - 1])}" r="4.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2" pointer-events="none"/>`;
+  for (let i = 0; i < 31; i++) g += `<rect x="${px(i) - dw / 2}" y="${T}" width="${dw}" height="${H}" fill="transparent" data-tip="${i + 1}日まで　${mLabel(month)} ${i < upto && i < now.length ? yen(now[i]) : "-"}　${mLabel(prevM)} ${i < pre.length ? yen(pre[i]) : "-"}"/>`;
+  $("chPace").innerHTML = `<svg viewBox="0 0 ${W} ${T + H + B}">${g}</svg>`;
+  $("lgPace").innerHTML = `<span><i class="ln" style="background:var(--accent)"></i>${mLabel(month)}</span><span><i class="ln" style="background:var(--sgray)"></i>${mLabel(prevM)}（点線）</span>`;
+}
+const y4 = m => m.slice(0, 4) !== month.slice(0, 4) ? m.slice(0, 4) + "年" : "";
+// 押した所・指を置いた所の金額を出す
+(() => {
+  const tip = document.createElement("div"); tip.className = "tip hidden"; document.body.appendChild(tip);
+  let hideT = null;
+  const show = e => { const t = e.target.closest && e.target.closest("[data-tip]"); if (!t || !$("tab-chart").contains(t)) { if (e.type === "pointermove") tip.classList.add("hidden"); return; }
+    tip.textContent = t.dataset.tip; tip.classList.remove("hidden");
+    const r = tip.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, e.clientX - r.width / 2)) + "px"; tip.style.top = Math.max(8, e.clientY - r.height - 14) + "px";
+    clearTimeout(hideT); if (e.type === "pointerdown") hideT = setTimeout(() => tip.classList.add("hidden"), 2500); };
+  document.addEventListener("pointermove", show); document.addEventListener("pointerdown", show);
+  addEventListener("scroll", () => tip.classList.add("hidden"), { passive: true });
+})();
+addEventListener("resize", () => { if (tab === "chart") renderCharts(); });
+
+// ===== 固定費 =====
+function applyFixed() {
+  const today = todayStr(), cur = today.slice(0, 7); let changed = false;
+  state.fixed = state.fixed || []; state.fixedDone = state.fixedDone || {};
+  for (const f of state.fixed) {
+    for (let ym = f.start; ym <= cur; ym = addMonth(ym, 1)) {
+      const key = f.id + "|" + ym; if (state.fixedDone[key]) continue;
+      const [y, m] = ym.split("-").map(Number), day = Math.min(f.day, new Date(y, m, 0).getDate()), date = `${ym}-${pad(day)}`;
+      if (date > today) continue;
+      state.entries.push({ id: uid(), date, store: f.name, items: [{ name: f.name, price: f.amount, cat: f.cat }], total: f.amount, pay: "", bag: { has: false, price: 0 }, tax: { amount: 0, incl: true }, fixed: f.id, thumb: "", created: Date.now() });
+      state.fixedDone[key] = true; changed = true;
+    }
+  }
+  if (changed) save();
+  return changed;
+}
+function renderFixed() {
+  const cs = [UNSET, ...catNames()];
+  if (document.activeElement !== $("fxCat")) { const v = $("fxCat").value; $("fxCat").innerHTML = cs.map(c => `<option>${esc(c)}</option>`).join(""); $("fxCat").value = cs.includes(v) ? v : (cs.includes("その他") ? "その他" : UNSET); }
+  if (!$("fxDay").options.length) $("fxDay").innerHTML = Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}日${i === 30 ? "（月末）" : ""}</option>`).join("");
+  $("fixedList").innerHTML = (state.fixed || []).map(f => `<div class="entry" style="cursor:default;align-items:center"><div class="ph" style="height:40px">🔁</div><div class="b"><div class="s">${esc(f.name)}</div><div class="muted">毎月${f.day === 31 ? "月末" : f.day + "日"}・${esc(fixCat(f.cat))}</div></div><div class="a">${yen(f.amount)}</div><button class="btn sm warn" data-fxdel="${f.id}">やめる</button></div>`).join("") || `<p class="muted">まだ登録がありません。</p>`;
+}
+$("fxAdd").onclick = () => {
+  const name = $("fxName").value.trim(), amount = Math.round(Number($("fxAmt").value.replace(/[^\d]/g, "")) || 0);
+  if (!name || !amount) { toast("名前と金額を入れてください"); return; }
+  const f = { id: uid(), name, amount, cat: $("fxCat").value, day: +$("fxDay").value, start: todayStr().slice(0, 7) };
+  state.fixed.push(f); $("fxName").value = ""; $("fxAmt").value = "";
+  const added = applyFixed(); save(); render();
+  toast(added ? "登録して、今月分を書き込みました" : `登録しました（毎月${f.day}日に書き込みます）`);
+};
+$("fixedList").addEventListener("click", e => {
+  const b = e.target.closest("[data-fxdel]"); if (!b) return;
+  if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = "もう一度押す"; return; }
+  state.fixed = state.fixed.filter(f => f.id !== b.dataset.fxdel); save(); render(); toast("固定費をやめました（今までの記録は残ります）");
+});
+
+// ===== バックアップ =====
+const blobToDataUrl = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(null); fr.readAsDataURL(b); });
+const dataUrlToBlob = u => { const [h, b64] = u.split(","); const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: (h.match(/:(.*?);/) || [])[1] || "image/jpeg" }); };
+$("bkOut").onclick = async () => {
+  $("bkStatus").innerHTML = `<p class="muted">書き出しの準備中…</p>`;
+  const images = {};
+  if ($("bkImg").checked) for (const e of state.entries) if (e.hasImg) { const b = await store.getImg(e.id); if (b) images[e.id] = await blobToDataUrl(b); }
+  const data = JSON.stringify({ app: "ai-receipt-kakeibo", version: 1, savedAt: new Date().toISOString(), state, images });
+  const filename = `家計簿バックアップ_${todayStr()}.json`, blob = new Blob([data], { type: "application/json" });
+  const dl = window.claude ? await claude.use("downloads").catch(() => null) : null;
+  try {
+    if (dl) await dl.save({ filename, data: blob });
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); }
+    $("bkStatus").innerHTML = `<p class="note" style="margin-top:8px">✓ 「${esc(filename)}」を書き出しました（約${(blob.size / 1048576).toFixed(1)}MB）。Googleドライブやパソコンなど、スマホ以外の場所にも置いておくと安心です。</p>`;
+  } catch (e) { $("bkStatus").innerHTML = `<p class="muted">書き出しをやめました。</p>`; }
+};
+let pendingBk = null;
+$("bkIn").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (j.app !== "ai-receipt-kakeibo" || !j.state || !Array.isArray(j.state.entries)) throw 0;
+    pendingBk = j;
+    $("bkStatus").innerHTML = `<p class="note" style="margin-top:8px">${esc(j.savedAt ? j.savedAt.slice(0, 10) : "")} のバックアップ（記録 ${j.state.entries.length}件・画像 ${Object.keys(j.images || {}).length}枚）です。<br>読み込むと、今この端末にある記録は置き換わります。<br><button class="btn sm main" id="bkGo" style="margin-top:6px">置き換えて読み込む</button> <button class="btn sm" id="bkNo" style="margin-top:6px">やめる</button></p>`;
+    $("bkNo").onclick = () => { pendingBk = null; $("bkStatus").innerHTML = ""; };
+    $("bkGo").onclick = async () => {
+      const j = pendingBk; if (!j) return;
+      await store.delImgs(state.entries.map(x => x.id));
+      state = Object.assign({ dict: {}, income: {}, fixed: [], fixedDone: {}, review: {}, loans: [], banks: [], bankDict: {}, wallet: null, jobs: [], pending: [], jobTotal: 0 }, j.state);
+      for (const [id, u] of Object.entries(j.images || {})) { try { await store.putImg(id, dataUrlToBlob(u)); } catch (_) {} }
+      state.entries.forEach(x => { if (x.hasImg && !(j.images || {})[x.id]) x.hasImg = false; });
+      migrateBank(); applyFixed(); save(); pendingBk = null; render();
+      $("bkStatus").innerHTML = `<p class="note" style="margin-top:8px">✓ バックアップから戻しました。</p>`;
+    };
+  } catch (err) { $("bkStatus").innerHTML = `<p class="err">このファイルはこのアプリのバックアップではないようです。</p>`; }
+};
+
+// ===== AIのふり返り =====
+function renderReview() {
+  $("rvH").textContent = `🤖 ${mLabel(month)}のAIのふり返り`;
+  const r = (state.review || {})[month];
+  $("rvBody").innerHTML = r ? `<p style="margin:0;white-space:pre-wrap">${esc(r.text)}</p><p class="muted" style="margin:4px 0 0;font-size:12px">${esc(r.at.slice(0, 10))} 時点の記録で作りました</p><p style="margin:4px 0 0;text-align:right"><button class="repl" id="rvReport">⚑ AIの答えを報告</button></p>` : `<p class="muted" style="margin:0">この月の使い方を、AIが短くまとめてくれます。月末や、気になったときに押してください。</p>`;
+  $("rvBtn").textContent = r ? "もう一度ふり返ってもらう" : "この月をふり返ってもらう";
+  $("rvBtn").disabled = !sample;
+  if ($("rvReport")) $("rvReport").onclick = () => openReport(`${mLabel(month)}のふり返り\n${r.text}`);
+}
+$("rvBtn").onclick = async () => {
+  if (!sample) return;
+  const T = totals(), prev = addMonth(month, -1);
+  if (!T.sum) { toast("この月の記録がまだありません"); return; }
+  const pc = {}; allE().filter(e => e.date.slice(0, 7) === prev).forEach(e => lines(e).forEach(it => { const c = fixCat(it.cat); pc[c] = (pc[c] || 0) + it.price; }));
+  const top = []; monthEntries().forEach(e => e.items.forEach(it => top.push({ t: `${it.name}（${e.store}）${it.price}円`, p: it.price })));
+  top.sort((a, b) => b.p - a.p);
+  const facts = {
+    月: mLabel(month), 支出合計: T.sum, 先月の支出合計: spendOf(prev), 収入: incOf(month) || "未入力", 前月からの繰越: carryOf(month).v,
+    費目ごと: sheetCats(T).map(c => ({ 費目: c.name, 今月: T.byCat[c.name] || 0, 先月: pc[c.name] || 0, 予算: c.budget || "なし" })),
+    高かった買い物: top.slice(0, 5).map(x => x.t), 記録の件数: monthEntries().length
+  };
+  $("rvBtn").disabled = true; $("rvBody").innerHTML = `<div class="spin"></div><p class="muted" style="text-align:center;margin:0" id="rvLive">考えています…</p>`;
+  try {
+    const { text } = await sample(`あなたは家計簿アプリの、やさしいアドバイザーです。次の集計をもとに、この月のお金の使い方を日本語で短くふり返ってください。
+- 4〜5文、全部で200字くらい。むずかしい言葉や専門用語は使わない。
+- 1文目: 全体の印象（先月とくらべて多い/少ない、金額も）。先月の記録が0なら比較はしない。
+- 次に、目立った費目を1〜2つ（予算を超えた費目があれば必ずふれる）。
+- よかった点を1つほめる。
+- 来月に向けて、すぐできる小さな工夫を1つだけ。責めたり、説教したりしない。
+- 見出し・記号・箇条書きは使わず、ふつうの文章で。
+集計(JSON): ${JSON.stringify(facts)}`, { onText: ({ text }) => { const el = $("rvLive"); if (el) el.textContent = text; } });
+    state.review = state.review || {}; state.review[month] = { text: text.trim(), at: new Date().toISOString() }; save();
+  } catch (e) { toast(errMsg(e)); }
+  $("rvBtn").disabled = false; renderReview();
+};
+// ===== 仮想金額（知人・身内とのお金のやり取り。支出合計には入れない） =====
+const LOAN_TYPES = {
+  lend: { label: "貸した・立て替えた", sign: 1 },
+  back: { label: "返してもらった", sign: -1 },
+  borrow: { label: "借りた・払ってもらった", sign: -1 },
+  repay: { label: "返した", sign: 1 }
+};
+const loanBal = () => { const b = {}; (state.loans || []).forEach(l => { b[l.who] = (b[l.who] || 0) + LOAN_TYPES[l.type].sign * l.amount; }); return b; };
+const signYen = v => (v < 0 ? "−" : v > 0 ? "+" : "") + yen(Math.abs(v));
+function renderLoans() {
+  const b = loanBal(), people = Object.keys(b).sort((x, y) => Math.abs(b[y]) - Math.abs(b[x]));
+  const get = people.reduce((a, k) => a + Math.max(0, b[k]), 0), pay = people.reduce((a, k) => a + Math.max(0, -b[k]), 0);
+  $("lnSum").textContent = signYen(get - pay); $("lnTable").checked = !!state.loanInTable;
+  $("lnSum").style.color = get - pay < 0 ? "var(--warn)" : "";
+  $("lnSub").textContent = `受け取る予定 ${yen(get)}・払う予定 ${yen(pay)}`;
+  $("lnList").innerHTML = people.map(k => {
+    const v = b[k];
+    return `<div class="entry" data-who="${esc(k)}" style="align-items:center"><div class="ph" style="height:40px">${v > 0 ? "📥" : v < 0 ? "📤" : "✅"}</div><div class="b"><div class="s">${esc(k)}</div><div class="muted">${v > 0 ? "あなたが受け取る" : v < 0 ? "あなたが払う" : "精算ずみ"}・${(state.loans || []).filter(l => l.who === k).length}件</div></div><div class="a" style="${v < 0 ? "color:var(--warn)" : ""}">${signYen(v)}</div></div>`;
+  }).join("") || `<p class="muted" style="margin:6px 0 0">まだ記録がありません。</p>`;
+}
+function openLoanForm(who, edit) {
+  const l = edit || { who: who || "", type: "lend", amount: "", date: todayStr(), memo: "" };
+  const names = [...new Set((state.loans || []).map(x => x.who))];
+  openPanel(`<h2>${edit ? "やり取りを直す" : "お金のやり取りを記録"}</h2>
+    <p class="muted" style="margin-top:0">家計簿の支出合計には入りません。「仮想金額」として別に数えます。</p>
+    <label class="f">相手</label><input class="t" id="lnWho" list="lnNames" value="${esc(l.who)}" placeholder="例：母、田中さん"><datalist id="lnNames">${names.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+    <label class="f">どうした？</label>
+    <select class="t" id="lnType">${Object.entries(LOAN_TYPES).map(([k, t]) => `<option value="${k}"${k === l.type ? " selected" : ""}>${t.label}（${t.sign > 0 ? "＋" : "−"}）</option>`).join("")}</select>
+    <div class="grid2"><div><label class="f">金額</label><input class="t" id="lnAmt" inputmode="numeric" value="${l.amount || ""}" placeholder="円" style="text-align:right"></div>
+      <div><label class="f">日付</label><input class="t" type="date" id="lnDate" value="${esc(l.date)}"></div></div>
+    <label class="f">メモ</label><input class="t" id="lnMemo" value="${esc(l.memo || "")}" placeholder="例：飲み会の立て替え">
+    <div class="row" style="justify-content:space-between;margin-top:12px">
+      <div class="row">${edit ? `<button class="btn warn" id="lnDel">消す</button>` : ""}<button class="btn" id="lnCancel">やめる</button></div>
+      <button class="btn main" id="lnSave">記録する</button></div>`);
+  $("lnCancel").onclick = () => who && !edit ? showLoanPerson(who) : closePanel();
+  if (edit) $("lnDel").onclick = () => {
+    if (!$("lnDel").dataset.sure) { $("lnDel").dataset.sure = 1; $("lnDel").textContent = "もう一度押すと消えます"; return; }
+    state.loans = state.loans.filter(x => x.id !== edit.id); save(); render(); showLoanPerson(edit.who);
+  };
+  $("lnSave").onclick = () => {
+    const w = $("lnWho").value.trim(), amount = Math.round(Number($("lnAmt").value.replace(/[^\d]/g, "")) || 0);
+    if (!w || !amount) { toast("相手と金額を入れてください"); return; }
+    const rec = { id: edit ? edit.id : uid(), who: w, type: $("lnType").value, amount, date: $("lnDate").value || todayStr(), memo: $("lnMemo").value.trim() };
+    state.loans = (state.loans || []).filter(x => x.id !== rec.id).concat(rec); save(); render(); showLoanPerson(w);
+    toast("記録しました");
+  };
+}
+function showLoanPerson(who) {
+  const list = (state.loans || []).filter(l => l.who === who).sort((a, b) => b.date.localeCompare(a.date));
+  if (!list.length) { closePanel(); return; }
+  const v = loanBal()[who] || 0;
+  openPanel(`<h2>${esc(who)}</h2>
+    <p style="margin:0 0 8px">${v > 0 ? `あなたが <b>${yen(v)}</b> 受け取る予定` : v < 0 ? `あなたが <b style="color:var(--warn)">${yen(-v)}</b> 払う予定` : "✅ 精算ずみです"}</p>
+    ${list.map(l => `<div class="entry" data-lid="${l.id}"><div class="b"><div class="s">${LOAN_TYPES[l.type].label}</div><div class="muted">${md(l.date)}${l.memo ? "・" + esc(l.memo) : ""}</div></div><div class="a">${signYen(LOAN_TYPES[l.type].sign * l.amount)}</div></div>`).join("")}
+    <div class="row" style="justify-content:space-between;margin-top:12px">
+      <div class="row"><button class="btn" id="lpClose">閉じる</button>${v ? `<button class="btn" id="lpSettle">全部精算した</button>` : ""}</div>
+      <button class="btn main" id="lpAdd">＋ 記録する</button></div>`);
+  $("lpClose").onclick = closePanel;
+  $("lpAdd").onclick = () => openLoanForm(who);
+  if ($("lpSettle")) $("lpSettle").onclick = () => {
+    if (!$("lpSettle").dataset.sure) { $("lpSettle").dataset.sure = 1; $("lpSettle").textContent = `${yen(Math.abs(v))}を${v > 0 ? "返してもらった" : "返した"}ことにする`; return; }
+    state.loans.push({ id: uid(), who, type: v > 0 ? "back" : "repay", amount: Math.abs(v), date: todayStr(), memo: "精算" }); save(); render(); showLoanPerson(who);
+  };
+  $("panel").querySelectorAll("[data-lid]").forEach(el => el.onclick = () => openLoanForm(who, state.loans.find(x => x.id === el.dataset.lid)));
+}
+$("lnAdd").onclick = () => openLoanForm();
+$("lnTable").onchange = e => { state.loanInTable = e.target.checked; save(); render(); toast(e.target.checked ? "家計簿の表に「貸し借り」を載せました" : "表から「貸し借り」を外しました"); };
+$("lnList").addEventListener("click", e => { const r = e.target.closest("[data-who]"); if (r) showLoanPerson(r.dataset.who); });
+// ===== 通帳管理 =====
+const BANK_KIND = { bill: "引き落とし（光熱費など）", card: "カードの引き落とし", atm: "ATM引き出し（財布へ）", salary: "給与・収入", transfer: "振込・振替", other: "その他" };
+let curBank = null;
+const banks = () => (state.banks = state.banks || []);
+function renderBank() {
+  if (!curBank || !banks().find(b => b.id === curBank)) curBank = banks()[0] ? banks()[0].id : null;
+  $("bkChips").innerHTML = banks().map(b => `<button class="btn sm${b.id === curBank ? " main" : ""}" data-bank="${b.id}">${esc(b.name)}</button>`).join("") + `<button class="btn sm" id="bankAdd">＋ 口座を追加</button>`;
+  const b = banks().find(x => x.id === curBank);
+  $("bankBody").classList.toggle("hidden", !b);
+  $("bankEmpty").classList.toggle("hidden", !!b);
+  if (!b) return;
+  const rows = (b.rows || []).slice().sort((x, y) => y.date.localeCompare(x.date) || y.added - x.added);
+  const last = rows.find(r => r.balance != null);
+  $("bankBal").textContent = last ? yen(last.balance) : "—";
+  $("bankBalNote").textContent = last ? `${md(last.date)} 時点の残高` : "まだ記帳がありません";
+  const mo = rows.filter(r => r.date.slice(0, 7) === month);
+  const mOut = mo.reduce((a, r) => a + (r.out || 0), 0), mIn = mo.reduce((a, r) => a + (r.in || 0), 0);
+  $("bankMonth").innerHTML = `${mLabel(month)}：出金 <b>${yen(mOut)}</b>・入金 <b>${yen(mIn)}</b>`;
+  const on = bankOn(b.id, month);
+  $("bankOnChk").checked = on;
+  $("bankOnLbl").textContent = `${mLabel(month)}の通帳を家計簿に反映する`;
+  $("bankOnSub").textContent = on ? "この月の「家計簿に入れる」引き落とし・「収入に足す」入金・ATM引き出しを、家計簿・繰越・財布に入れます。" : "⚠ 反映していません。この月の通帳の引き落とし・収入は、家計簿にも繰越（残り）にも入りません。";
+  const ms = [...new Set(rows.map(r => r.date.slice(0, 7)))].sort().reverse();
+  $("bankMonths").innerHTML = ms.length > 1 || (ms.length && ms[0] !== month) ? `<span class="muted" style="font-size:12px;width:100%">月ごとの反映（押すと切り替わります）</span>` + ms.map(ym => `<button type="button" data-bym="${ym}" class="${bankOn(b.id, ym) ? "on" : ""}">${bankOn(b.id, ym) ? "✓ " : ""}${mLabel(ym)}</button>`).join("") : "";
+  $("bankRows").innerHTML = rows.length ? `<div class="tablebox" style="max-height:420px"><table><thead><tr><th>日付</th><th>内容</th><th class="num">出金</th><th class="num">入金</th><th class="num">残高</th></tr></thead><tbody>${rows.map(r =>
+    `<tr data-brow="${r.id}" class="bkrow"${r.date.slice(0, 7) === month && bankOn(b.id, month) ? "" : ' style="opacity:.55"'}><td>${md(r.date)}</td><td>${esc(r.name || r.desc)}${r.entry ? " 📒" : ""}${r.income ? " 💴" : ""}${r.kind === "atm" ? " 👛" : ""}<div class="muted" style="font-size:11px">${esc(BANK_KIND[r.kind] || "")}${r.name && r.name !== r.desc ? "・" + esc(r.desc) : ""}</div></td><td class="num">${r.out ? r.out.toLocaleString("ja-JP") : ""}</td><td class="num">${r.in ? r.in.toLocaleString("ja-JP") : ""}</td><td class="num">${r.balance != null ? r.balance.toLocaleString("ja-JP") : ""}</td></tr>`).join("")}</tbody></table></div>
+    <p class="muted" style="margin:6px 0 0;font-size:12px">📒＝家計簿に入れた行　💴＝収入に足した入金　👛＝財布に移したお金。<b>行を押すと直せます。</b></p>` : `<p class="muted">「通帳を撮る」から記帳したページを読み込んでください。</p>`;
+}
+$("bkChips").addEventListener("click", e => {
+  const c = e.target.closest("[data-bank]"); if (c) { curBank = c.dataset.bank; renderBank(); return; }
+  if (e.target.id === "bankAdd") openBankForm();
+});
+$("bankEmpty").addEventListener("click", e => { if (e.target.id === "bankAdd2") openBankForm(); });
+function openBankForm(b) {
+  openPanel(`<h2>${b ? "口座の名前を変える" : "口座を追加"}</h2>
+    <label class="f">口座の名前</label><input class="t" id="bfName" value="${esc(b ? b.name : "")}" placeholder="例：楽天銀行、ゆうちょ">
+    <div class="row" style="justify-content:space-between;margin-top:12px"><div class="row">${b ? `<button class="btn warn" id="bfDel">この口座を消す</button>` : ""}<button class="btn" id="bfNo">やめる</button></div><button class="btn main" id="bfOk">${b ? "保存" : "追加"}</button></div>`);
+  $("bfNo").onclick = closePanel;
+  $("bfOk").onclick = () => { const n = $("bfName").value.trim(); if (!n) return;
+    if (b) b.name = n; else { const nb = { id: uid(), name: n, rows: [] }; banks().push(nb); curBank = nb.id; }
+    save(); closePanel(); renderBank(); };
+  if (b) $("bfDel").onclick = () => { if (!$("bfDel").dataset.sure) { $("bfDel").dataset.sure = 1; $("bfDel").textContent = "もう一度押すと、この口座と、ここから家計簿に入れた記録・収入が消えます"; return; }
+    state.banks = banks().filter(x => x.id !== b.id); state.entries = state.entries.filter(e => e.bank !== b.id); save(); closePanel(); render(); };
+}
+$("bankOnChk").onchange = e => { setBankOn(curBank, month, e.target.checked); };
+$("bankMonths").addEventListener("click", e => { const t = e.target.closest("[data-bym]"); if (t) setBankOn(curBank, t.dataset.bym, !bankOn(curBank, t.dataset.bym)); });
+function setBankOn(bid, ym, on) {
+  state.bankOff = state.bankOff || {};
+  if (on) delete state.bankOff[bid + "|" + ym]; else state.bankOff[bid + "|" + ym] = true;
+  save(); render(); toast(`${mLabel(ym)}の通帳を${on ? "家計簿に反映しました" : "家計簿から外しました"}`);
+}
+$("bankRows").addEventListener("click", e => { const tr = e.target.closest("[data-brow]"); if (tr) editBankRow(curBank, tr.dataset.brow); });
+// 保存したあとの通帳の行を直す・消す
+function editBankRow(bid, rid) {
+  const b = banks().find(x => x.id === bid); if (!b) return;
+  const row = (b.rows || []).find(x => x.id === rid); if (!row) return;
+  const ent = row.entry ? state.entries.find(x => x.id === row.entry) : null;
+  const f = { date: row.date, name: row.name || row.desc, out: row.out || 0, in: row.in || 0, balance: row.balance, kind: row.kind, use: !!ent, cat: ent ? lines(ent)[0]?.cat : ((state.bankDict || {})[normName(row.desc)] || {}).cat || UNSET, inc: !!row.income };
+  const cs = [UNSET, ...catNames()];
+  const num = v => Math.round(Number(String(v).replace(/[^\d]/g, "")) || 0);
+  const draw = () => {
+    openPanel(`<h2>通帳の行を直す</h2>
+      <p class="muted" style="margin-top:0">${esc(b.name)}・通帳の印字：${esc(row.desc)}</p>
+      <div class="grid2"><div><label class="f">日付</label><input class="t" type="date" id="brDate" value="${esc(f.date)}"></div>
+        <div><label class="f">種類</label><select class="t" id="brKind">${Object.entries(BANK_KIND).map(([k, t]) => `<option value="${k}"${k === f.kind ? " selected" : ""}>${t}</option>`).join("")}</select></div></div>
+      <label class="f">内容（分かりやすい名前）</label><input class="t" id="brName" value="${esc(f.name)}">
+      <div class="grid2"><div><label class="f">出金</label><input class="t" id="brOut" inputmode="numeric" value="${f.out ? f.out.toLocaleString("ja-JP") : ""}" placeholder="0"></div>
+        <div><label class="f">入金</label><input class="t" id="brIn" inputmode="numeric" value="${f.in ? f.in.toLocaleString("ja-JP") : ""}" placeholder="0"></div></div>
+      <label class="f">残高</label><input class="t" id="brBal" inputmode="numeric" value="${f.balance != null ? f.balance.toLocaleString("ja-JP") : ""}" placeholder="（空欄でもよい）">
+      <div id="brOpt" style="margin-top:10px"></div>
+      <div class="row" style="justify-content:space-between;margin-top:14px"><button class="btn warn" id="brDel">この行を消す</button><div class="row"><button class="btn" id="brNo">やめる</button><button class="btn main" id="brOk">保存</button></div></div>`);
+    const opt = () => {
+      f.out = num($("brOut").value); f.in = num($("brIn").value); f.kind = $("brKind").value;
+      $("brOpt").innerHTML = f.out && f.kind === "atm" ? `<p class="muted" style="margin:0">👛 財布に移ったお金として数えます（支出にはしません）</p>`
+        : f.out ? `<label class="chk" style="margin:0 0 6px"><input type="checkbox" id="brUse"${f.use ? " checked" : ""}> <span>家計簿に入れる（支出）</span></label><select class="t${fixCat(f.cat) === UNSET ? " unset" : ""}" id="brCat">${cs.map(c => `<option${c === fixCat(f.cat) ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>`
+        : f.in ? `<label class="chk" style="margin:0"><input type="checkbox" id="brInc"${f.inc ? " checked" : ""}> <span>${+$("brDate").value.slice(5, 7) || ""}月の収入に足す</span></label>` : "";
+      if ($("brUse")) $("brUse").onchange = e => { f.use = e.target.checked; };
+      if ($("brCat")) $("brCat").onchange = e => { f.cat = e.target.value; e.target.classList.toggle("unset", e.target.value === UNSET); };
+      if ($("brInc")) $("brInc").onchange = e => { f.inc = e.target.checked; };
+    };
+    opt();
+    $("brKind").onchange = () => { f.kind = $("brKind").value; if (f.kind === "bill") f.use = true; if (f.kind === "card" || f.kind === "atm") f.use = false; if (f.kind === "salary") f.inc = true; opt(); };
+    $("brOut").onchange = opt; $("brIn").onchange = opt; $("brDate").onchange = opt;
+    $("brNo").onclick = closePanel;
+    $("brDel").onclick = () => {
+      if (!$("brDel").dataset.sure) { $("brDel").dataset.sure = 1; $("brDel").textContent = "もう一度押すと消えます"; return; }
+      if (row.entry) state.entries = state.entries.filter(x => x.id !== row.entry);
+      b.rows = b.rows.filter(x => x.id !== row.id); save(); closePanel(true); render(); toast("通帳の行を消しました");
+    };
+    $("brOk").onclick = () => {
+      opt();
+      const d = $("brDate").value; if (!d) { toast("日付を入れてください"); return; }
+      if (!f.out && !f.in) { toast("出金か入金の金額を入れてください"); return; }
+      row.date = d; row.name = $("brName").value.trim() || row.desc; row.out = f.out; row.in = f.in; row.kind = f.kind;
+      const bal = $("brBal").value.trim(); row.balance = bal ? num(bal) : null;
+      const wantE = f.out > 0 && f.kind !== "atm" && f.use;
+      if (wantE) {
+        let e = row.entry ? state.entries.find(x => x.id === row.entry) : null;
+        if (!e) { e = { id: uid(), store: `${b.name}（引き落とし）`, pay: "口座引き落とし", bag: { has: false, price: 0 }, tax: { amount: 0, incl: true }, bank: b.id, thumb: "", created: Date.now() }; state.entries.push(e); row.entry = e.id; }
+        Object.assign(e, { date: d, items: [{ name: row.name, price: f.out, cat: fixCat(f.cat) }], total: f.out });
+      } else if (row.entry) { state.entries = state.entries.filter(x => x.id !== row.entry); delete row.entry; }
+      row.income = !!(f.in > 0 && f.inc);
+      state.bankDict = state.bankDict || {}; state.bankDict[normName(row.desc)] = { desc: row.desc, name: row.name, kind: row.kind, cat: wantE ? fixCat(f.cat) : "" };
+      save(); closePanel(true); render(); toast("通帳の行を直しました");
+    };
+  };
+  draw();
+}
+$("bankRename").onclick = () => openBankForm(banks().find(x => x.id === curBank));
+
+async function readPassbook(blob, bankName) {
+  const cats = catNames();
+  const learned = Object.entries(state.bankDict || {}).slice(-40).map(([k, v]) => `「${v.desc}」→ ${v.name}（${BANK_KIND[v.kind] || v.kind}${v.cat ? "・" + v.cat : ""}）`).join("\n");
+  const prompt = `添付の画像は銀行の通帳（${bankName}）を記帳したページの写真、またはネットバンキングの入出金明細のスクリーンショットです。1行ずつ読み取ってください。
+- date: 日付 YYYY-MM-DD。通帳は「R7.10.25」「07-10-25」(令和) や「25-10-25」(西暦の下2けた) のように書かれる。令和n年＝西暦(2018+n)年。年が分からなければ ${todayStr().slice(0, 4)} 年。
+- desc: 摘要・お取引内容をそのまま（例「カード」「デンキ」「ﾄｳｷｮｳｶﾞｽ」「ATM」「振込 ﾀﾅｶ」）。
+- name: desc を分かりやすい日本語に直したもの（例「ﾄｳｷｮｳｶﾞｽ」→「東京ガス（ガス代）」、「NHK」→「NHK受信料」、「ｽｲﾄﾞｳ」→「水道代」）。
+- out: お引出し・お支払金額（なければ 0）。in: お預入れ・お受取金額（なければ 0）。balance: 差引残高（読めなければ null）。
+- kind: 次から1つ
+  "bill" = 電気・ガス・水道・電話・NHK・保険・家賃・ローン・サブスクなどの引き落とし
+  "card" = クレジットカード会社への引き落とし（「カード」「JCB」「ﾗｸﾃﾝｶｰﾄﾞ」「ｾｿﾞﾝ」など）
+  "atm" = ATM・CDでの現金引き出し（「ATM」「CD」「カード」+ 出金で手数料がないものなど）
+  "salary" = 給与・賞与・年金・児童手当などの入金
+  "transfer" = 振込・振替・口座間の移動
+  "other" = それ以外（利息・手数料など）
+- cat: kind が "bill" のときだけ、家計簿の費目を次から選ぶ: ${cats.map(c => `「${c}」`).join("、")}（合うものがなければ "未設定"）。
+${learned ? `この人の過去の分類（同じ摘要が出たら同じにする）:\n${learned}\n` : ""}- 繰越・合計・空行・印字のない行は入れない。読めない行は飛ばす。
+- 通帳でも明細でもない画像なら {"error":"理由"} だけを返す。
+次のJSONだけを返してください:
+{"rows":[{"date":"2026-10-25","desc":"ﾃﾞﾝｷ","name":"電気代","out":6820,"in":0,"balance":152340,"kind":"bill","cat":"${cats[0]}"}]}`;
+  const r = await sample.json(prompt, { images: [blob] });
+  if (!r || r.error) throw { code: "refused", message: r && r.error };
+  const rows = (Array.isArray(r.rows) ? r.rows : []).map(x => {
+    const desc = String(x.desc || x.name || "").trim(), learnedHit = (state.bankDict || {})[normName(desc)];
+    const row = { date: /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : todayStr(), desc, name: String(x.name || desc).trim(), out: Math.max(0, Math.round(Number(x.out) || 0)), in: Math.max(0, Math.round(Number(x.in) || 0)), balance: x.balance == null || x.balance === "" ? null : Math.round(Number(x.balance) || 0), kind: BANK_KIND[x.kind] ? x.kind : "other", cat: x.cat ? fixCat(x.cat) : UNSET };
+    if (learnedHit) { row.name = learnedHit.name; row.kind = learnedHit.kind; if (learnedHit.cat) row.cat = fixCat(learnedHit.cat); row.known = true; }
+    return row;
+  }).filter(x => x.desc && (x.out || x.in));
+  if (!rows.length) throw { code: "refused", message: "読み取れる行がありませんでした" };
+  return rows;
+}
+
+async function onBankFile(file) {
+  if (!file) return;
+  const b = banks().find(x => x.id === curBank);
+  if (!b) { toast("先に口座を追加してください"); return; }
+  if (!isImg(file)) { toast("画像のファイルを選んでください"); return; }
+  if (!sample) { toast(ERR.no_key); return; }
+  let im; try { im = await loadImage(file); } catch (e) { toast(e.message); return; }
+  openPanel(`<img class="thumb" src="${shrink(im, 360, .6).dataUrl()}" alt=""><div class="spin"></div><p style="text-align:center;margin:0"><b>通帳を読み取っています…</b></p><p class="muted" style="text-align:center">20〜60秒ほどかかります</p>`);
+  try {
+    const rows = await readPassbook(await shrink(im, 2400, .88).toBlob(), b.name);
+    const key = r => [r.date, normName(r.desc), r.out, r.in, r.balance].join("|");
+    const have = new Set((b.rows || []).map(key));
+    rows.forEach(r => { r.dup = have.has(key(r)); r.use = !r.dup && r.kind === "bill"; r.inc = !r.dup && r.kind === "salary"; });
+    renderBankConfirm(b, rows);
+  } catch (e) { openPanel(`<p class="err">${esc(e && e.code === "refused" && e.message ? "読み取れませんでした：" + e.message : errMsg(e))}</p><p class="muted">記帳したページ全体が入るよう、真上から明るい場所で撮ってください。</p><div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">閉じる</button></div>`); }
+}
+function renderBankConfirm(b, rows) {
+  const cs = [UNSET, ...catNames()];
+  openPanel(`<p style="margin:0 0 4px;text-align:right"><button class="repl" id="bcReport">⚑ AIの答えを報告</button></p><h2>${esc(b.name)}：読み取った行</h2>
+    <p class="muted" style="margin-top:0">内容と種類を確かめてください。光熱費などの引き落としは「家計簿に入れる」にチェックすると、その費目で記録します。カードの引き落としは、買い物をレシートで記録していれば二重になるので入れません。ATM引き出しは財布に移ったお金として数えます。</p>
+    ${rows.map((r, i) => `<div class="item" style="grid-template-columns:1fr 1fr;${r.dup ? "opacity:.5" : ""}">
+      <div><b>${md(r.date)}</b> ${esc(r.desc)}${r.dup ? ' <span class="muted">（登録済み）</span>' : ""}${r.known ? ' <span class="muted">📒前と同じ分類</span>' : ""}</div>
+      <div class="num" style="text-align:right;font-weight:700">${r.out ? "−" + yen(r.out) : "+" + yen(r.in)}</div>
+      ${r.dup ? "" : `<input class="t" data-bk="name" data-i="${i}" value="${esc(r.name)}" style="grid-column:1/3">
+      <select class="t" data-bk="kind" data-i="${i}" style="grid-column:1/3">${Object.entries(BANK_KIND).map(([k, t]) => `<option value="${k}"${k === r.kind ? " selected" : ""}>${t}</option>`).join("")}</select>
+      ${r.out && r.kind === "atm" ? `<p class="muted" style="grid-column:1/3;margin:0;font-size:13px">👛 財布に移ったお金として数えます（支出にはしません）</p>` : r.out ? `<label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" data-bk="use" data-i="${i}"${r.use ? " checked" : ""}>家計簿に入れる</label>
+        <select class="t${fixCat(r.cat) === UNSET ? " unset" : ""}" data-bk="cat" data-i="${i}">${cs.map(c => `<option${c === fixCat(r.cat) ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>`
+      : `<label style="display:flex;gap:6px;align-items:center;font-size:14px;grid-column:1/3"><input type="checkbox" data-bk="inc" data-i="${i}"${r.inc ? " checked" : ""}>${+r.date.slice(5, 7)}月の収入（給与）に足す</label>`}`}
+    </div>`).join("")}
+    <div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn" id="bcNo">やめる</button><button class="btn main" id="bcOk">保存する</button></div>`);
+  $("panel").querySelectorAll("[data-bk]").forEach(el => el.addEventListener("change", () => {
+    const r = rows[+el.dataset.i], k = el.dataset.bk;
+    if (el.type === "checkbox") r[k] = el.checked; else r[k] = el.value;
+    if (k === "kind") { r.use = r.kind === "bill"; r.inc = r.kind === "salary"; renderBankConfirm(b, rows); }
+    if (k === "cat") el.classList.toggle("unset", el.value === UNSET);
+  }));
+  $("panel").querySelectorAll('input[data-bk="name"]').forEach(el => el.addEventListener("input", () => { rows[+el.dataset.i].name = el.value; }));
+  $("bcNo").onclick = closePanel;
+  $("bcReport").onclick = () => openReport(`${b.name}の通帳\n` + rows.map(r => `${r.date} ${r.desc}→${r.name} 出${r.out} 入${r.in} [${r.kind}${r.cat ? "・" + r.cat : ""}]`).join("\n"), () => renderBankConfirm(b, rows));
+  $("bcOk").onclick = () => {
+    b.rows = b.rows || []; state.bankDict = state.bankDict || {}; let nE = 0, nI = 0;
+    for (const r of rows) {
+      if (r.dup) continue;
+      const row = { id: uid(), date: r.date, desc: r.desc, name: r.name.trim() || r.desc, out: r.out, in: r.in, balance: r.balance, kind: r.kind, added: Date.now() };
+      if (r.use && r.out) {
+        const e = { id: uid(), date: r.date, store: `${b.name}（引き落とし）`, items: [{ name: row.name, price: r.out, cat: fixCat(r.cat) }], total: r.out, pay: "口座引き落とし", bag: { has: false, price: 0 }, tax: { amount: 0, incl: true }, bank: b.id, thumb: "", created: Date.now() };
+        state.entries.push(e); row.entry = e.id; nE++;
+      }
+      if (r.inc && r.in) { row.income = true; nI++; }
+      state.bankDict[normName(r.desc)] = { desc: r.desc, name: row.name, kind: r.kind, cat: r.use ? fixCat(r.cat) : "" };
+      b.rows.push(row);
+    }
+    save(); closePanel(); render();
+    toast(`保存しました${nE ? `（家計簿に${nE}件）` : ""}${nI ? `（収入に${nI}件）` : ""}`);
+  };
+}
+$("bankCam").onchange = e => { onBankFile(e.target.files[0]); e.target.value = ""; };
+$("bankPic").onchange = e => { onBankFile(e.target.files[0]); e.target.value = ""; };
+
+// ===== 財布の残高合わせ =====
+// 前回数えた額 ＋ その後のATM引き出し − その後の現金の支出 ＝ 財布にあるはずの額
+const isCashEntry = e => !e.fixed && !e.bank && !e.loan && (!e.pay || /現金/.test(e.pay));
+function walletCalc() {
+  const w = state.wallet; if (!w) return null;
+  const after = (date, t) => date > w.date || (date === w.date && (t || 0) > w.time);
+  let atm = 0, spend = 0;
+  banks().forEach(b => (b.rows || []).forEach(r => { if (r.kind === "atm" && r.out && bankOn(b.id, r.date.slice(0, 7)) && after(r.date, r.added)) atm += r.out; }));
+  state.entries.forEach(e => { if (isCashEntry(e) && !e.walletAdj && after(e.date, e.created)) spend += entrySum(e); });
+  return { base: w.amount, atm, spend, expect: w.amount + atm - spend };
+}
+function renderWallet() {
+  const c = walletCalc();
+  $("wBody").innerHTML = c ? `<div class="l"><span>前回数えた額<br><span class="muted">${md(state.wallet.date)}</span></span><b style="text-align:right">${yen(c.base)}</b></div>
+    <div class="l"><span>その後のATM引き出し</span><b style="text-align:right">+${yen(c.atm)}</b></div>
+    <div class="l"><span>その後の現金の支出</span><b style="text-align:right">−${yen(c.spend)}</b></div>
+    <div class="res"><span>財布にあるはずの額</span><span class="big">${yen(c.expect)}</span></div>`
+    : `<p class="muted" style="margin:0">まず、今の財布の中身を数えて入れてください。そこから、ATMで下ろしたお金（通帳から）と現金の支出（レシート）で自動計算します。</p>`;
+  $("wBtn").textContent = c ? "財布の中身を数えて合わせる" : "今の財布の中身を登録";
+}
+$("wBtn").onclick = () => {
+  const c = walletCalc();
+  openPanel(`<h2>${c ? "財布の残高合わせ" : "財布の中身を登録"}</h2>
+    <p class="muted" style="margin-top:0">財布の中のお金を数えて、いくらあるか入れてください。${c ? `計算では ${yen(c.expect)} のはずです。` : ""}</p>
+    <label class="f">財布の中身</label><input class="t" id="wAmt" inputmode="numeric" placeholder="円" style="text-align:right;font-size:20px">
+    <div id="wDiff" class="diff hidden"></div>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn" id="wNo">やめる</button><button class="btn main" id="wOk">${c ? "合わせる" : "登録する"}</button></div>`);
+  const val = () => Math.round(Number($("wAmt").value.replace(/[^\d]/g, "")) || 0);
+  $("wAmt").oninput = () => { if (!c || $("wAmt").value === "") { $("wDiff").classList.add("hidden"); return; } const d = c.expect - val();
+    $("wDiff").classList.remove("hidden"); $("wDiff").className = "diff" + (d ? " bad" : "");
+    $("wDiff").innerHTML = d > 0 ? `計算より ${yen(d)} 少ないです。この分を「使途不明金」として、今日の支出（${esc(fixCat("その他"))}）に記録します。` : d < 0 ? `計算より ${yen(-d)} 多いです。この分を今月の「その他の収入」に足します（記録し忘れた収入やお釣りの読み違いなど）。` : "✓ ぴったり合っています。"; };
+  $("wNo").onclick = closePanel;
+  $("wOk").onclick = () => {
+    if ($("wAmt").value === "") { toast("金額を入れてください"); return; }
+    const a = val(), now = Date.now();
+    if (c) { const d = c.expect - a;
+      if (d > 0) state.entries.push({ id: uid(), date: todayStr(), store: "財布の残高合わせ", items: [{ name: "使途不明金", price: d, cat: fixCat("その他") }], total: d, pay: "現金", bag: { has: false, price: 0 }, tax: { amount: 0, incl: true }, walletAdj: true, thumb: "", created: now });
+      if (d < 0) { const ym = todayStr().slice(0, 7); state.income = state.income || {}; const x = state.income[ym] = state.income[ym] || {}; x.other = (x.other || 0) - d; }
+      toast(d > 0 ? `使途不明金 ${yen(d)} を記録しました` : d < 0 ? `その他の収入に ${yen(-d)} 足しました` : "ぴったりでした");
+    } else toast("財布の中身を登録しました");
+    state.wallet = { amount: a, date: todayStr(), time: now + 1 };
+    save(); closePanel(); render();
+  };
+};
+
+let tt = null;
+function toast(s) { $("toast").textContent = s; $("toast").classList.remove("hidden"); clearTimeout(tt); tt = setTimeout(() => $("toast").classList.add("hidden"), 2600); }
+
+// 起動画面：少し見せてから消える（押すとすぐ消える）
+{
+  const sp = $("splash"), t0 = Date.now();
+  const hide = () => { if (sp.classList.contains("out")) return; sp.classList.add("out"); setTimeout(() => sp.remove(), 600); };
+  sp.onclick = hide; window.hideSplash = () => setTimeout(hide, Math.max(0, 1600 - (Date.now() - t0)));
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+(async () => {
+  const s = await store.get();
+  if (s && s.tpl && Array.isArray(s.entries)) state = Object.assign({ dict: {}, income: {}, fixed: [], fixedDone: {}, review: {}, loans: [], banks: [], bankDict: {}, wallet: null, jobs: [], pending: [], jobTotal: 0 }, s);
+  migrateBank(); applyFixed();
+  render(); renderJobBar(); hideSplash(); refreshAI();
+  // 前に止まった読み取りがあれば続きから
+  if ((state.jobs || []).length) { for (let i = 0; i < 40 && !sample; i++) await sleep(250); runJobs(); }
+})();
+render();
+</script>
+</body>
+</html>

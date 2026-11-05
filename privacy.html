@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIレシート家計簿 プライバシーポリシー</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fff;--ink:#26302b;--sub:#66706a;--line:#e0dbd0;--accent:#2f8a5f}
+@media (prefers-color-scheme: dark){:root{--bg:#141815;--card:#1d231f;--ink:#e8ede9;--sub:#a3ada6;--line:#2f3832;--accent:#4fb985;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.8}
+main{max-width:720px;margin:0 auto;padding:24px 16px 56px}
+h1{font-size:24px;margin:0 0 4px}
+h2{font-size:18px;margin:28px 0 6px;color:var(--accent)}
+p,li{font-size:15px}
+ul{padding-left:1.3em}
+.meta{color:var(--sub);font-size:13px}
+a{color:#2f80ed}
+</style>
+</head>
+<body>
+<main>
+<h1>AIレシート家計簿 プライバシーポリシー</h1>
+<p class="meta">制定日：2026年11月5日　／　運営者：breaklight-ichi</p>
+
+<p>AIレシート家計簿（以下「本アプリ」）は、レシートなどの画像をAIで読み取り、家計簿をつけるアプリです。本アプリが扱う情報と、その扱い方を説明します。</p>
+
+<h2>1. 運営者が受け取る情報</h2>
+<p>運営者は、利用者の家計簿の記録、レシート・通帳・家計簿の画像、収入や貸し借りの情報、Geminiの鍵（APIキー）を<strong>受け取りません</strong>。本アプリには運営者のサーバーがなく、会員登録やログインもありません。</p>
+
+<h2>2. 端末の中だけに保存する情報</h2>
+<ul>
+  <li>家計簿の記録（日付・店名・品目・金額・費目・支払い方法など）</li>
+  <li>レシートの画像（読める大きさに縮めたもの）</li>
+  <li>収入・繰越・貯金、財布、貸し借り、通帳の明細、固定費</li>
+  <li>家計簿の形（ひな形）、費目、画面の設定</li>
+  <li>Geminiの鍵（APIキー）</li>
+</ul>
+<p>これらは利用者の端末（ブラウザの保存領域）にだけ保存されます。アプリ内の削除ボタン、またはブラウザ・アプリのデータ削除で、いつでも消すことができます。バックアップのファイルは、利用者が自分で書き出した場合だけ作られ、Geminiの鍵は含まれません。</p>
+
+<h2>3. Google（Gemini API）へ送る情報</h2>
+<p>AIを使う操作をした時だけ、次の情報を、利用者自身の鍵を使って端末から直接Googleへ送ります。</p>
+<ul>
+  <li>読み取りに選んだレシート・ネット購入の画面・通帳・家計簿の用紙の画像</li>
+  <li>費目の名前や、以前に選んだ費目の例（読み取りの精度を上げるため）</li>
+  <li>「AIのふり返り」を使った時の、その月の集計（費目ごとの金額など）</li>
+</ul>
+<p>送った情報は、Googleの規約に従って扱われます。Gemini APIの<strong>無料枠では、送った内容がGoogleの製品改善に使われることがあります</strong>。支払い設定をした有料枠では、改善には使われません。詳しくは <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini API 追加利用規約</a> と <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google プライバシーポリシー</a> をご確認ください。</p>
+
+<h2>4. 料金</h2>
+<p>AIの利用料は、利用者のGoogleアカウントに対して発生します（無料枠の範囲では0円）。運営者がAIの利用料を受け取ることはありません。</p>
+
+<h2>5. カメラ</h2>
+<p>カメラは、レシート・通帳・家計簿の用紙を撮るためだけに使います。</p>
+
+<h2>6. 外部サイトへのリンク</h2>
+<p>「Googleで調べる」などのボタンは、外部のサイトを開きます。開いた先での情報の扱いは、各サイトの方針に従います。</p>
+
+<h2>7. 子どもの利用</h2>
+<p>本アプリは大人向けです。Geminiの鍵の取得には、Googleの規約で定められた年齢条件があります。</p>
+
+<h2>8. AIの答えの報告</h2>
+<p>アプリ内の「AIの答えを報告」から、不適切な答えを運営者へメールで報告できます。報告に含まれるのは、利用者が選んだ理由・書いた文・AIの答えの要約（店名・品目・金額・費目）で、画像は含まれません。いただいた報告は、読み取りの改善にだけ使います。</p>
+
+<h2>9. お問い合わせ</h2>
+<p>本ポリシーについてのお問い合わせは、次のメールアドレスへお送りください。<br>breaklight.ichi@gmail.com</p>
+
+<h2>10. 変更</h2>
+<p>本ポリシーを変更する場合は、このページでお知らせします。</p>
+</main>
+</body>
+</html>
