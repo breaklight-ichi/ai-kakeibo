@@ -205,7 +205,12 @@ input.t,select.t{width:100%;border:1px solid var(--line);border-radius:10px;padd
 @keyframes sp{to{transform:rotate(360deg)}}
 .entry{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--line);padding:10px 0;cursor:pointer}
 .entry:first-child{border-top:0}
-.entry img{width:48px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);flex:none}
+#entries .entry{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#entries .entry.press{background:var(--line);transition:background 1s}
+#entries .entry.dup{background:rgba(214,48,49,.07);box-shadow:inset 4px 0 0 #d63031;padding-left:8px;border-radius:6px}
+#entries .entry.dup img,#entries .entry.dup .ph{outline:3px solid #d63031;outline-offset:1px}
+.dupTag{display:inline-block;color:#fff;background:#d63031;border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;margin-bottom:2px}
+.entry img{-webkit-touch-callout:none;width:48px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);flex:none}
 .entry .ph{width:48px;height:64px;border-radius:6px;background:var(--soft);display:grid;place-items:center;flex:none;font-size:20px}
 .entry .b{flex:1;min-width:0}
 .entry .s{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -283,6 +288,9 @@ body.fsXL .navbar b{font-size:17px}
       <div class="l"><span>支出合計</span><b id="mSpend" style="text-align:right"></b></div>
       <div class="res"><span id="mLeftLbl">残り（翌月へ繰越）</span><span class="big" id="mLeft"></span></div>
       <p class="muted" style="margin:6px 0 0" id="mYear"></p>
+      <div style="margin-top:12px"><b>家計簿をつけ始めた月</b>
+        <div class="row" style="align-items:center;gap:6px;margin-top:4px"><input class="t" type="month" id="startYm" style="flex:1"><button class="btn sm" id="startNow">今月にする</button><button class="btn sm" id="startClr">決めない</button></div>
+        <p class="muted" style="margin:4px 0 0;font-size:12px">この月より前の記録は、繰り越し（残り）の計算に入れません。通帳も、この月より前の行は家計簿に反映しません（通帳の画面で、必要な月だけ反映することもできます）。始めた月の「前月からの繰り越し」には、始めたときの手元のお金を入れてください。</p></div>
       <label class="chk" style="margin-top:12px"><input type="checkbox" id="noCarry"> <span><b>前の月の残りを翌月に繰り越す</b><br><span class="muted" style="font-size:12px">外すと、どの月も繰越0円から始まり、その月だけのお金の動きを確かめられます（手で入れた繰越はそのまま使います）。</span></span></label>
     </div>  </section>
   <section id="tab-wallet" class="hidden">
@@ -311,6 +319,7 @@ body.fsXL .navbar b{font-size:17px}
     <div class="card">
       <div class="row" style="justify-content:space-between"><h2 style="margin:0">今月の記録</h2>
         <div class="row"><button class="btn sm" id="addManual">＋ 手で入力</button><button class="btn sm" id="csv">CSVで保存</button></div></div>
+      <p class="muted" style="margin:0 0 4px;font-size:12px">押すと直せます。<b>長押し（1秒）</b>で消せます。</p>
       <div id="entries"></div>
     </div>
     <div class="card">
@@ -439,8 +448,19 @@ body.fsXL .navbar b{font-size:17px}
         <label class="pick main" style="flex:1"><span>📷 撮る</span><input type="file" accept="image/*" capture="environment" id="tplCam"></label>
         <label class="pick" style="flex:1.4"><span>🖼 スクショ・写真から</span><input type="file" accept="image/*" id="tplFile"></label>
       </div>
+      <p class="muted" style="margin:8px 0 0">📸 撮るときのコツ：<b>真上（正面）から</b>、<b>1ページ全体</b>が入る距離で、<b>明るい場所</b>で。いちばん上の見出し（費目の行）がはっきり写るようにしてください。斜めや遠すぎると読めないことがあります。</p>
       <div class="paste" id="tplPaste" contenteditable="true">ここを長押し／クリックして画像を貼り付け（ボタンが動かないとき）</div>
       <div id="tplStatus"></div>
+      <p class="muted" style="margin:10px 0 0">家計簿をつけたことがない人は、読み込まなくても大丈夫です。よく使う費目の表が最初から入っているので、そのままレシートを撮って始められます。</p>
+    </div>
+    <div class="card">
+      <h2>📥 途中から始めるとき（書いてある金額の取り込み）</h2>
+      <p class="muted" style="margin-top:0">今の家計簿にもう書き込んでいる月は、そのページを撮ると<b>書いてある金額をこのアプリに取り込めます</b>（1ページ＝1か月）。取り込む前に、確認して直せます。</p>
+      <div class="row">
+        <label class="pick main" style="flex:1"><span>📷 撮る</span><input type="file" accept="image/*" capture="environment" id="fillCam"></label>
+        <label class="pick" style="flex:1.4"><span>🖼 写真から</span><input type="file" accept="image/*" id="fillFile"></label>
+      </div>
+      <div id="fillStatus"></div>
     </div>
     <div class="card">
       <h2>いまの家計簿の形と費目</h2>
@@ -482,7 +502,7 @@ body.fsXL .navbar b{font-size:17px}
     <div class="card">
       <h2>データについて</h2>
       <p class="muted" style="margin:0">記録はこの端末の中だけに保存されます。AIに送るのは読み取る瞬間の画像と、ふり返りのときの集計だけで、あなたの鍵でGoogle（Gemini）へ直接送ります。運営者には届きません。</p>
-      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 1</p>
+      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 2</p>
       <div class="row" style="margin-top:8px"><button class="btn sm warn" id="wipe">記録をすべて消す</button></div>
     </div>
   </section>
@@ -722,7 +742,8 @@ const LOAN_LABEL = { lend: "貸した・立て替えた", back: "返してもら
 const LOAN_SIGN = { lend: 1, back: -1, borrow: -1, repay: 1 };
 const loanEntries = () => !state.loanInTable ? [] : (state.loans || []).map(l => ({ id: "loan-" + l.id, loan: l.who, date: l.date, store: l.who, items: [{ name: `${LOAN_LABEL[l.type]}（${l.who}）${l.memo ? "・" + l.memo : ""}`, price: LOAN_SIGN[l.type] * l.amount, cat: LOANCAT }], pay: "", created: 0 }));
 // 通帳：口座ごと・月ごとに「家計簿に反映する／しない」
-const bankOn = (bid, ym) => !(state.bankOff || {})[bid + "|" + ym];
+// 通帳の月ごとの反映：手で決めた月はそれに従う（true=外す・false=入れる）。決めていない月は「家計簿をつけ始めた月」より前なら外す
+const bankOn = (bid, ym) => { const k = (state.bankOff || {})[bid + "|" + ym]; if (k === true) return false; if (k === false) return true; return !(state.startYm && ym < state.startYm); };
 const allE = () => state.entries.filter(e => !e.bank || bankOn(e.bank, e.date.slice(0, 7))).concat(loanEntries());
 // 通帳の入金のうち「収入に足す」にした分（反映する月だけ）
 function bankInc(ym) {
@@ -839,6 +860,7 @@ async function readTemplate(blob) {
   const cats = (Array.isArray(r.categories) ? r.categories : []).map(c => ({
     name: String((c && c.name) || "").replace(/[：:]\s*$/, "").trim().slice(0, 12), budget: c && Number(c.budget) > 0 ? Math.round(Number(c.budget)) : null
   })).filter(c => c.name && !/繰り?越|^(収入|支出)?合計/.test(c.name)).map(c => { cnt[c.name] = (cnt[c.name] || 0) + 1; return cnt[c.name] > 1 ? { ...c, name: `${c.name}（${cnt[c.name]}）` } : c; });
+  if (!cats.filter(c => c.name !== "その他").length) throw { code: "refused", message: "費目の見出しが読み取れませんでした" };
   if (!cats.some(c => c.name === "その他")) cats.push({ name: "その他", budget: null });
   const cols = (Array.isArray(r.columns) ? r.columns : []).filter(c => c && c.label).map(c => ({ label: String(c.label).slice(0, 12), field: FIELDS[c.field] ? c.field : "other" }));
   return {
@@ -886,7 +908,7 @@ const extOf = ym => Object.values((((state.income || {})[ym] || {}).ext) || {}).
 const saveOf = ym => Math.max(0, Number(state.saving) || 0);
 const incOf = ym => { const x = (state.income || {})[ym] || {}; return (x.salary || 0) + (x.other || 0) + bankInc(ym) + extOf(ym); };
 function carryOf(ym) {
-  const months = [...allE().map(e => e.date.slice(0, 7)), ...Object.keys(state.income || {}), ...bankIncMonths()].filter(k => k < ym).sort();
+  const months = [...allE().map(e => e.date.slice(0, 7)), ...Object.keys(state.income || {}), ...bankIncMonths()].filter(k => k < ym && !(state.startYm && k < state.startYm)).sort();
   const manual = ((state.income || {})[ym] || {}).carry;
   if (manual !== undefined && manual !== null) return { v: manual, auto: false };
   if (state.noCarry) return { v: 0, auto: true, off: true };
@@ -907,6 +929,7 @@ function renderMoney() {
   $("mCarry").placeholder = c.v.toLocaleString("ja-JP");
   $("carryNote").textContent = c.off ? "（繰り越さない設定）" : c.auto ? "（自動で計算）" : "（手で入力）";
   $("noCarry").checked = !state.noCarry;
+  if (document.activeElement !== $("startYm")) $("startYm").value = state.startYm || "";
   $("mLeftLbl").textContent = state.noCarry ? "残り（この月だけ）" : "残り（翌月へ繰越）";
   if (document.activeElement !== $("mSave")) $("mSave").value = state.saving ? Number(state.saving).toLocaleString("ja-JP") : "";
   set("mSalary", x.salary); set("mOther", x.other);
@@ -1236,11 +1259,12 @@ function renderSheet(T, y, m) {
 }
 
 function renderEntries() {
-  const list = monthEntries().slice().reverse();
-  $("entries").innerHTML = list.map(e => {
+  const list = monthEntries().slice().reverse(), dm = dupMap();
+  const nd = list.filter(e => dm[e.id]).length;
+  $("entries").innerHTML = (nd ? `<p class="diff bad" style="margin:4px 0 6px">⚠ 同じレシートが2回入っているものが ${nd}件 あります（赤い印）。長押しで消せます。</p>` : "") + list.map(e => {
     const s = entrySum(e);
-    return `<div class="entry" data-e="${e.id}">${e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="ph">${e.loan ? "🤝" : e.fixed ? "🔁" : "✍️"}</div>`}
-      <div class="b"><div class="s">${esc(e.store || "（店名なし）")}</div>
+    return `<div class="entry${dm[e.id] ? " dup" : ""}" data-e="${e.id}">${e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="ph">${e.loan ? "🤝" : e.fixed ? "🔁" : "✍️"}</div>`}
+      <div class="b">${dm[e.id] ? `<span class="dupTag">ダブり？ あとから入れた方</span>` : ""}<div class="s">${esc(e.store || "（店名なし）")}</div>
       <div class="muted">${+e.date.slice(5, 7)}月${+e.date.slice(8, 10)}日・${e.items.length}品${e.pay ? "・" + esc(e.pay) : ""}</div>
       <div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.items.map(i => i.name).join("、"))}</div></div>
       <div class="a">${yen(s)}</div></div>`;
@@ -1268,6 +1292,17 @@ function priceHistory(it, exceptId) {
   return out.sort((a, b) => b.date.localeCompare(a.date));
 }
 const md = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+// 同じレシートを2回以上入れたもの：同じ日・同じ金額・店名の頭4文字が同じ。先に入れた1件を残し、あとから入れた方に印を付ける
+function dupMap() {
+  const g = {}, out = {};
+  const sk = e => normName(e.store || "").replace(/[\s\-‐－−–・.。、,]/g, "").slice(0, 4);
+  // 店名は頭4文字で比べ、短い方がもう片方の頭と同じなら同じ店（「ロピア」と「ロピア 港北店」）
+  const same = (a, b) => (!a && !b) || (a && b && (a.startsWith(b) || b.startsWith(a)));
+  state.entries.filter(e => !e.bank && !e.fixed && !e.loan && !e.paper && !e.walletAdj).forEach(e => { const k = [e.date, Math.round(entrySum(e))].join("|"); (g[k] = g[k] || []).push(e); });
+  Object.values(g).forEach(L => { if (L.length < 2) return; L.sort((a, b) => (a.created || 0) - (b.created || 0));
+    L.forEach((e, i) => { const first = L.slice(0, i).find(f => !out[f.id] && same(sk(f), sk(e))); if (first) out[e.id] = first; }); });
+  return out;
+}
 function findDup(d) {
   if (d.id) return null;
   const amt = d.total || entrySum(d), st = normName(d.store).slice(0, 4);
@@ -1306,14 +1341,17 @@ const FATAL = ["no_key", "bad_key", "key_denied", "rate_limited", "offline"];
 // mode: "camera"＝アプリ内で撮影（1枚ずつ）、"pick"＝カメラアプリで撮った写真（3枚までまとめ読み）
 async function analyzeImage(im, mode, status) {
   const whole = blankDraft(shrink(im, 240, .6).dataUrl(), await shrink(im, 1400, .8).toBlob());
+  // 速さのため、まず写真全体を1回だけ読む（ほとんどは1枚なので、これで終わり）。
+  // 「写真から」で2枚以上写っていたときだけ、位置を調べて1枚ずつ切り分けて読み直す（従来どおりの正確さ）
+  let rs = null, err = null;
+  try { rs = await readReceipt(await shrink(im, 2400, .85).toBlob()); } catch (e) { if (e && FATAL.includes(e.code)) throw e; err = e; }
   let boxes = [];
-  if (mode === "pick") { try { boxes = await locateReceipts(await shrink(im, 1600, .85).toBlob()); } catch (e) { if (e && FATAL.includes(e.code)) throw e; boxes = []; } }
-  if (mode === "camera" || boxes.length <= 1) {
-    try {
-      const rs = await readReceipt(await shrink(im, 2400, .88).toBlob());
+  if (mode === "pick" && rs && rs.length > 1) { status && status(0, rs.length); try { boxes = await locateReceipts(await shrink(im, 1600, .85).toBlob()); } catch (e) { if (e && FATAL.includes(e.code)) throw e; boxes = []; } }
+  if (boxes.length <= 1) {
+    if (rs) {
       fillDraft(whole, rs[0]);
-      if (mode === "camera" && rs.length > 1) whole.note = "📷 この写真には複数のレシートが写っていたので、1枚目だけ読みました。まとめて読むときは、スマホのカメラアプリで撮った写真を「🖼 写真から」で読み込んでください。";
-    } catch (e) { if (e && FATAL.includes(e.code)) throw e; failDraft(whole, e); }
+      if (rs.length > 1) whole.note = mode === "camera" ? "📷 この写真には複数のレシートが写っていたので、1枚目だけ読みました。まとめて読むときは、スマホのカメラアプリで撮った写真を「🖼 写真から」で読み込んでください。" : "この写真には複数のレシートが写っていたようですが、分けられなかったので1枚目だけ読みました。1枚ずつ撮り直すと確実です。";
+    } else failDraft(whole, err);
     return [whole];
   }
   const over = boxes.length > MULTI_MAX; boxes = boxes.slice(0, MULTI_MAX);
@@ -1344,7 +1382,7 @@ async function onReceiptFile(file, mode = "pick") {
   status("レシートを読み取っています…");
   if (!sample) { draft.full = await shrink(im, 1400, .8).toBlob(); draft.busy = false; draft.err = "AIの鍵がまだ設定されていないため、手で入力してください（⚙設定の「🔑 AIの設定」で設定すると、AIが読み取ります）。"; draft.items = [{ name: "", price: 0, cat: catNames()[0] }]; renderDraft(); return; }
   let ds;
-  try { ds = await analyzeImage(im, mode, (i, n) => { if (draft === token) status(`${n}枚のレシートを1枚ずつ読んでいます…（${i}/${n}）`); }); }
+  try { ds = await analyzeImage(im, mode, (i, n) => { if (draft === token) status(i ? `${n}枚のレシートを1枚ずつ読んでいます…（${i}/${n}）` : `${n}枚のレシートが写っています。1枚ずつに分けています…`); }); }
   catch (e) { ds = [failDraft(blankDraft(thumb, await shrink(im, 1400, .8).toBlob()), e)]; }
   if (draft !== token) return;
   draft = ds.shift(); queue = ds;
@@ -1376,7 +1414,7 @@ async function runJobs() {
       let im = null; try { im = await loadImage(blob); } catch (e) { im = null; }
       if (im) {
         for (let tries = 0; tries < 4 && !ds; tries++) {
-          try { ds = await analyzeImage(im, "pick", (i, n) => { jobSub = `この写真のレシート ${i}/${n}枚目`; renderJobBar(); }); }
+          try { ds = await analyzeImage(im, "pick", (i, n) => { jobSub = i ? `この写真のレシート ${i}/${n}枚目` : `この写真の${n}枚を分けています`; renderJobBar(); }); }
           catch (e) {
             if (e && e.code === "rate_limited" && tries < 3) { jobSub = "AIが混み合っているので少し待っています…"; renderJobBar(); await sleep(30000 * (tries + 1)); continue; }
             jobsStopped = errMsg(e); break;
@@ -1574,14 +1612,118 @@ async function onTplFile(file) {
   let im; try { im = await loadImage(file); } catch (e) { $("tplStatus").innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
   $("tplStatus").innerHTML = `<img class="thumb" style="margin-top:10px" src="${shrink(im, 600, .7).dataUrl()}" alt=""><div class="spin"></div><p style="text-align:center;margin:0"><b>家計簿の形を読み取っています…</b></p>`;
   try {
-    const t = await readTemplate(await shrink(im, 2400, .9).toBlob());
-    state.tpl = t; save();
-    $("tplStatus").innerHTML = `<p class="note" style="margin-top:10px">✓ 「${esc(t.title)}」の形で表を作りました（費目 ${t.categories.length}個）。下で直せます。<br><button class="btn sm main" id="seeBook" style="margin-top:6px">家計簿を見る</button></p>`;
+    const blob = await shrink(im, 2400, .9).toBlob();
+    const t = await readTemplate(blob);
+    const prev = state.tpl; state.tpl = t; save();
+    $("tplStatus").innerHTML = `<p class="note" style="margin-top:10px">✓ 「${esc(t.title)}」の形で表を作りました（費目 ${t.categories.length}個：${esc(t.categories.map(c => c.name).join("・"))}）。下で直せます。<br><button class="btn sm main" id="seeBook" style="margin-top:6px">家計簿を見る</button> <button class="btn sm" id="fillThis" style="margin-top:6px">📥 このページの金額も取り込む</button> <button class="btn sm" id="tplUndo" style="margin-top:6px">前の形に戻す</button></p>`;
+    $("tplUndo").onclick = () => { state.tpl = prev; save(); render(); $("tplStatus").innerHTML = `<p class="note" style="margin-top:10px">前の形に戻しました。</p>`; };
+    $("fillThis").onclick = () => runFill(blob, im, "tplStatus");
     $("seeBook").onclick = () => { ui().topBig = false; save(); applyLayout(); $("bookArea").scrollIntoView({ behavior: "smooth" }); };
     render();
   } catch (e) {
     $("tplStatus").innerHTML = `<p class="err">${esc(e && e.code === "refused" && e.message ? "読み取れませんでした：" + e.message : errMsg(e))}</p><p class="muted">うまくいかないときのコツ：家計簿の1ページ全体が入るように、真上から明るい場所で撮る／見出し（費目の行）がはっきり写るようにする／スクリーンショットがあればそちらを使う。</p>`;
   }
+}
+
+// ===== 書いてある金額の取り込み（途中から始める人向け） =====
+async function readFilled(blob) {
+  const t = state.tpl, cats = catNames(), { L } = incomeNames();
+  const prompt = `添付の画像は、ある人が書き込んでいる家計簿のページ（紙の写真またはスクリーンショット）です。このアプリに、このページに書いてある金額を取り込みたいので、書いてある金額を読み取ってください。手書きの数字は丁寧に読んでください。
+この家計簿の形: ${{ daily: "行が日付・列が費目の表", list: "1行に1件ずつ書く出納帳", summary: "費目ごとに合計を書く表" }[t.layout] || "家計簿"}
+費目（cat はこの中から選ぶ。合うものがなければ "未設定"）: ${cats.map(c => `「${c}」`).join("、")}
+収入の欄（name はこの中から選ぶ）: ${L.map(c => `「${c}」`).join("、")}
+- year, month: このページが何年何月の分か（書いてなければ null）。
+- rows: 支出を1件ずつ。day は日（1〜31、日が分からない・費目ごとの合計しかないときは null）、cat は費目、item は内容や店名（書いてなければ空文字）、amount は金額（円・正の数）。
+  日付×費目の表なら、金額が書いてあるマスを1つずつ1件にする。費目ごとの合計しかない表なら、費目ごとに1件（day は null）。
+- incomes: 収入・前月からの繰り越しに金額が書いてあれば {name, amount}。
+- 「合計」「小計」「予算」「残り」「翌月への繰り越し」の行や列の数字は入れない（二重になるため）。空欄や読めない数字は入れない。
+- 家計簿と関係のない画像なら {"error":"理由"} だけを返す。
+次のJSONだけを返してください:
+{"year":2026,"month":10,"rows":[{"day":3,"cat":"${cats[0]}","item":"","amount":1280}],"incomes":[{"name":"${L[1] || "給与"}","amount":200000}]}`;
+  const r = await sample.json(prompt, { images: [blob] });
+  if (!r || r.error) throw { code: "refused", message: r && r.error };
+  const rows = (Array.isArray(r.rows) ? r.rows : []).map(x => ({ day: Number(x.day) >= 1 && Number(x.day) <= 31 ? Math.round(Number(x.day)) : null, cat: fixCat(String(x.cat || "")), item: String(x.item || "").trim().slice(0, 30), amount: Math.round(Math.abs(Number(String(x.amount).replace(/[^\d.-]/g, "")) || 0)), use: true })).filter(x => x.amount > 0);
+  const incomes = (Array.isArray(r.incomes) ? r.incomes : []).map(x => ({ name: L.includes(x.name) ? x.name : (L.find(n => n.includes(String(x.name || "").slice(0, 2))) || L[L.length - 1]), amount: Math.round(Math.abs(Number(String(x.amount).replace(/[^\d.-]/g, "")) || 0)), use: true })).filter(x => x.amount > 0);
+  const y = Number(r.year), m = Number(r.month);
+  const ym = y >= 2000 && y <= 2100 && m >= 1 && m <= 12 ? `${y}-${String(m).padStart(2, "0")}` : (m >= 1 && m <= 12 ? `${month.slice(0, 4)}-${String(m).padStart(2, "0")}` : month);
+  if (!rows.length && !incomes.length) throw { code: "refused", message: "書き込まれた金額が見つかりませんでした" };
+  return { ym, rows, incomes };
+}
+async function runFill(blob, im, statusId) {
+  if (!sample) { toast(ERR.no_key || "この画面ではAIが使えません"); return; }
+  openPanel(`<img class="thumb" src="${shrink(im, 360, .6).dataUrl()}" alt=""><div class="spin"></div><p style="text-align:center;margin:0"><b>書いてある金額を読み取っています…</b></p><p class="muted" style="text-align:center">20〜60秒ほどかかります</p>`);
+  try { renderFill(await readFilled(blob)); }
+  catch (e) { openPanel(`<p class="err">${esc(e && e.code === "refused" && e.message ? "読み取れませんでした：" + e.message : errMsg(e))}</p><p class="muted">真上（正面）から、1ページ全体が入る距離で、明るい場所で撮り直してください。数字が小さいときは、半分ずつ撮ってもかまいません（同じ月に足されます）。</p><div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">閉じる</button></div>`); }
+}
+async function onFillFile(file) {
+  if (!file) return;
+  if (!isImg(file)) { toast("画像のファイルを選んでください"); return; }
+  let im; try { im = await loadImage(file); } catch (e) { toast(e.message); return; }
+  runFill(await shrink(im, 2400, .9).toBlob(), im, "fillStatus");
+}
+function renderFill(f) {
+  const cs = [UNSET, ...catNames()], days = ym => new Date(+ym.slice(0, 4), +ym.slice(5), 0).getDate();
+  const old = state.entries.filter(e => e.paper && e.date.slice(0, 7) === f.ym).length;
+  const sum = () => f.rows.filter(r => r.use).reduce((a, r) => a + r.amount, 0);
+  openPanel(`<p style="margin:0 0 4px;text-align:right"><button class="repl" id="fReport">⚑ AIの答えを報告</button></p><h2>書いてある金額の取り込み</h2>
+    <p class="muted" style="margin-top:0">AIが読んだ金額です。違うところは直し、取り込まない行はチェックを外してください。日の空欄は、その月の1日として入ります。</p>
+    <label class="f">何月の分？</label><input class="t" type="month" id="fYm" value="${f.ym}">
+    ${state.startYm && f.ym < state.startYm ? `<p class="muted" style="font-size:12px;margin:4px 0 0">※ 家計簿をつけ始めた月（${ymLabel(state.startYm)}）より前なので、表には入りますが、繰り越し（残り）の計算には入りません。 <button class="btn sm" id="fStart">つけ始めた月を${ymLabel(f.ym)}にする</button></p>` : ""}
+    ${f.incomes.length ? `<h3 style="margin:12px 0 4px">収入・繰り越し</h3>` + f.incomes.map((r, i) => `<div class="row" style="align-items:center;gap:6px;margin:4px 0"><input type="checkbox" data-fi="${i}" data-k="use" ${r.use ? "checked" : ""}><span style="flex:1">${esc(r.name)}</span><input class="t num" style="width:110px;text-align:right" inputmode="numeric" data-fi="${i}" data-k="amount" value="${r.amount}"></div>`).join("") : ""}
+    <h3 style="margin:12px 0 4px">支出 ${f.rows.length}件</h3>
+    ${f.rows.map((r, i) => `<div class="row" style="align-items:center;gap:6px;margin:4px 0;flex-wrap:nowrap"><input type="checkbox" data-fr="${i}" data-k="use" ${r.use ? "checked" : ""}><input class="t" style="width:52px;text-align:right" inputmode="numeric" data-fr="${i}" data-k="day" value="${r.day || ""}" placeholder="日"><select class="t" style="flex:1;min-width:0" data-fr="${i}" data-k="cat">${cs.map(c => `<option ${c === r.cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select><input class="t num" style="width:92px;text-align:right" inputmode="numeric" data-fr="${i}" data-k="amount" value="${r.amount}"></div>${r.item ? `<div class="muted" style="margin:-2px 0 4px 26px;font-size:12px">${esc(r.item)}</div>` : ""}`).join("")}
+    <p style="text-align:right;margin:8px 0"><b>支出の合計 <span id="fSum">${yen(sum())}</span></b></p>
+    ${old ? `<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="fRep" checked> この月に前に取り込んだ分（${old}件）を消して、入れ替える</label>` : ""}
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="fNo">やめる</button><button class="btn main" id="fOk">取り込む</button></div>`);
+  $("panel").querySelectorAll("[data-fr],[data-fi]").forEach(el => el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", () => {
+    const r = el.dataset.fr != null ? f.rows[+el.dataset.fr] : f.incomes[+el.dataset.fi], k = el.dataset.k;
+    if (k === "use") r.use = el.checked; else if (k === "cat") r.cat = el.value; else if (k === "day") { const d = Math.round(Number(el.value.replace(/[^\d]/g, "")) || 0); r.day = d >= 1 && d <= 31 ? d : null; } else r.amount = Math.round(Number(el.value.replace(/[^\d]/g, "")) || 0);
+    $("fSum").textContent = yen(sum());
+  }));
+  $("fYm").onchange = e => { if (/^\d{4}-\d{2}$/.test(e.target.value)) { f.ym = e.target.value; renderFill(f); } };
+  if ($("fStart")) $("fStart").onclick = () => { state.startYm = f.ym; save(); render(); toast(`つけ始めた月を${ymLabel(f.ym)}にしました`); renderFill(f); };
+  $("fNo").onclick = () => closePanel();
+  $("fReport").onclick = () => openReport(`手元の家計簿の金額（${f.ym}）\n` + f.incomes.map(r => `${r.name} ${r.amount}`).concat(f.rows.map(r => `${r.day || "-"}日 ${r.cat} ${r.item} ${r.amount}`)).join("\n"), () => renderFill(f));
+  $("fOk").onclick = () => {
+    const ym = f.ym, last = days(ym);
+    if ($("fRep") && $("fRep").checked) state.entries = state.entries.filter(e => !(e.paper && e.date.slice(0, 7) === ym));
+    const byDay = {};
+    f.rows.filter(r => r.use && r.amount > 0).forEach(r => { const d = `${ym}-${String(Math.min(r.day || 1, last)).padStart(2, "0")}`; (byDay[d] = byDay[d] || []).push({ name: r.item || r.cat, price: r.amount, cat: r.cat }); });
+    Object.entries(byDay).forEach(([date, items]) => state.entries.push({ id: uid(), date, store: "手元の家計簿から", items, total: items.reduce((a, it) => a + it.price, 0), pay: "", bag: { has: false, price: 0 }, tax: { amount: 0, incl: true }, paper: true, thumb: "", created: Date.now() }));
+    const inc = f.incomes.filter(r => r.use && r.amount > 0);
+    if (inc.length) {
+      state.income = state.income || {}; const x = state.income[ym] = state.income[ym] || {}; const { salary } = incomeNames();
+      inc.forEach(r => { const k = incKind(r.name); if (k === "carry") x.carry = r.amount; else if (r.name === salary) x.salary = r.amount; else if (k === "other") x.other = r.amount; else { x.ext = x.ext || {}; x.ext[r.name] = r.amount; } });
+    }
+    save(); closePanel(); setMonth(ym);
+    toast(`${+ym.slice(5)}月に ${Object.keys(byDay).length}日分・${yen(f.rows.filter(r => r.use).reduce((a, r) => a + r.amount, 0))} を取り込みました`);
+  };
+}
+
+// ===== スマホの「戻る」ボタン（画面下の ＜ ）：アプリの外に出ず、アプリの中で1つ戻る =====
+function setupBackKey() {
+  if (window.top !== window) return; // claude.ai の中では使わない
+  const guard = () => { try { history.pushState({ kb: 1 }, ""); } catch (e) {} };
+  try { history.replaceState({ kb: 0 }, ""); } catch (e) { return; }
+  guard();
+  window.addEventListener("popstate", () => {
+    const fs = $("fullSheet");
+    if (fs && !fs.classList.contains("hidden")) { $("fsClose").click(); guard(); return; }
+    if (!$("ymPop").classList.contains("hidden")) { $("ymPop").classList.add("hidden"); guard(); return; }
+    if (!$("ov").classList.contains("hidden")) {
+      const pn = $("panel");
+      if ($("rpBack")) $("rpBack").click(); // 報告の画面 → 元の画面へ
+      else if (pn.querySelector(".spin")) toast("読み取り中です。終わるまでお待ちください");
+      else if ((draft && !draft.id && $("dCancel")) || $("bcOk") || $("fOk")) toast("読み取った内容はまだ保存していません。閉じるときは「やめる」を押してください");
+      else closePanel(true);
+      guard(); return;
+    }
+    if (hi > 0) { histMove(-1); guard(); return; }
+    if (tab !== "home") { goPage("home"); guard(); return; }
+    // ホームで押したとき：守りを外して、2.5秒以内にもう一度押すとアプリを閉じる（押さなければ守りを戻す）
+    toast("もう一度「戻る」を押すと、アプリを閉じます");
+    setTimeout(() => { if (history.state && history.state.kb === 0) guard(); }, 2500);
+  });
 }
 
 // ===== 操作のつなぎこみ =====
@@ -1599,6 +1741,8 @@ $("picFile").onchange = e => {
 };
 $("tplFile").onchange = e => { onTplFile(e.target.files[0]); e.target.value = ""; };
 $("tplCam").onchange = e => { onTplFile(e.target.files[0]); e.target.value = ""; };
+$("fillCam").onchange = e => { onFillFile(e.target.files[0]); e.target.value = ""; };
+$("fillFile").onchange = e => { onFillFile(e.target.files[0]); e.target.value = ""; };
 function pasteHandler(fn) {
   return e => {
     e.preventDefault();
@@ -1660,7 +1804,7 @@ function openReport(summary, onBack) {
   $("rpMail").onclick = () => { setTimeout(back, 600); location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("AIの答えの報告（AIレシート家計簿）")}&body=${encodeURIComponent(body())}`; };
   $("rpCopy").onclick = async () => { try { await navigator.clipboard.writeText(body()); toast(`コピーしました。${CONTACT} に送ってください`); back(); } catch (e) { toast(CONTACT + " に送ってください"); } };
 }
-const APP_VER = "1";
+const APP_VER = "2";
 $("plusBatch").onchange = e => { plus().batch = e.target.checked; save(); toast(e.target.checked ? "まとめて読み取りをONにしました" : "まとめて読み取りをOFFにしました"); };
 $("plusPay").onchange = e => { plus().pay = e.target.checked; save(); };
 $("plusForm").onchange = e => { plus().form = e.target.checked; save(); };
@@ -1674,7 +1818,36 @@ $("ymPop").onclick = e => { const b = e.target.closest("[data-ym]"); if (b) { $(
 document.addEventListener("click", e => { if (!e.target.closest("#ymPop")) $("ymPop").classList.add("hidden"); });
 
 $("sheet").addEventListener("click", e => { const td = e.target.closest("td.cell"); if (!td) return; if (td.dataset.e) openEntry(td.dataset.e); else if (td.textContent) showCell(+td.dataset.d, td.dataset.c); });
+let lpUntil = 0; // 長押しのあとの click を無視する期限（時刻）
+// 長押しが成立したあと、指を離したときに起きる click（暗い背景に当たってパネルを閉じてしまう）を、どこに当たっても無視する
+document.addEventListener("click", e => { if (Date.now() < lpUntil) { lpUntil = 0; e.stopPropagation(); e.preventDefault(); } }, true);
+["pointerup", "touchend"].forEach(k => document.addEventListener(k, () => { if (Date.now() < lpUntil) lpUntil = Date.now() + 500; }, true));
 $("entries").addEventListener("click", e => { const r = e.target.closest(".entry"); if (r) openEntry(r.dataset.e); });
+// レシートを長押し（約1秒）→「このレシートを消しますか？」
+(() => {
+  let t = null, row = null, x0 = 0, y0 = 0;
+  const stop = () => { clearTimeout(t); t = null; if (row) row.classList.remove("press"); row = null; };
+  $("entries").addEventListener("contextmenu", e => { if (e.target.closest(".entry")) e.preventDefault(); });
+  $("entries").addEventListener("pointerdown", e => {
+    const r = e.target.closest(".entry[data-e]"); if (!r) return;
+    const en = state.entries.find(x => x.id === r.dataset.e); if (!en) return; // 貸し借りの行は対象外
+    stop(); row = r; x0 = e.clientX; y0 = e.clientY; r.classList.add("press");
+    t = setTimeout(() => { const id = r.dataset.e; stop(); lpUntil = Date.now() + 8000; askDelEntry(id); }, 1000);
+  });
+  $("entries").addEventListener("pointermove", e => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(k => $("entries").addEventListener(k, () => { if (t) stop(); }));
+})();
+function askDelEntry(id) {
+  const e = state.entries.find(x => x.id === id); if (!e) return;
+  try { navigator.vibrate && navigator.vibrate(30); } catch (er) {}
+  openPanel(`<h2>このレシートを消しますか？</h2>
+    <div class="entry" style="cursor:default">${e.thumb ? `<img src="${e.thumb}" alt="">` : `<div class="ph">✍️</div>`}<div class="b"><div class="s">${esc(e.store || "（店名なし）")}</div><div class="muted">${+e.date.slice(5, 7)}月${+e.date.slice(8, 10)}日・${e.items.length}品</div><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.items.map(i => i.name).join("、"))}</div></div><div class="a">${yen(entrySum(e))}</div></div>
+    <p class="muted">記録と画像の両方を消します。家計簿の表からも消えます（元に戻せません）。</p>
+    <div class="row" style="justify-content:space-between;margin-top:10px"><button class="btn" id="ldNo">やめる</button><span class="row" style="gap:6px">${e.hasImg ? `<button class="btn" id="ldImg">画像だけ消す</button>` : ""}<button class="btn warn" id="ldYes">消す</button></span></div>`);
+  $("ldNo").onclick = () => closePanel(true);
+  $("ldYes").onclick = () => { state.entries = state.entries.filter(x => x.id !== id); store.delImgs([id]); save(); closePanel(true); render(); toast("消しました"); };
+  if ($("ldImg")) $("ldImg").onclick = () => { store.delImgs([id]); e.hasImg = false; save(); closePanel(true); render(); updImgInfo(); toast("画像を消しました（記録は残っています）"); };
+}
 $("panel").addEventListener("click", e => { const r = e.target.closest(".entry[data-e]"); if (r && !draft) openEntry(r.dataset.e); });
 $("addManual").onclick = () => { draft = { id: null, thumb: "", date: month === todayStr().slice(0, 7) ? todayStr() : month + "-01", store: "", items: [{ name: "", price: 0, cat: catNames()[0] }], total: 0, pay: "" }; renderDraft(); };
 
@@ -1693,6 +1866,10 @@ $("incXBody").addEventListener("change", e => {
   save(); e.target.blur(); render();
 });
 $("mSave").onchange = e => { state.saving = Math.round(Number(String(e.target.value).replace(/[^\d]/g, "")) || 0); save(); e.target.blur(); render(); };
+function setStart(v) { state.startYm = v || null; save(); render(); toast(v ? `${mLabel(v)}から家計簿をつけ始めたことにしました` : "つけ始めた月を決めないようにしました（全部の月を計算に入れます）"); }
+$("startYm").onchange = e => { if (/^\d{4}-\d{2}$/.test(e.target.value)) setStart(e.target.value); };
+$("startNow").onclick = () => setStart(todayStr().slice(0, 7));
+$("startClr").onclick = () => setStart(null);
 $("noCarry").onchange = e => { state.noCarry = !e.target.checked; save(); render(); toast(e.target.checked ? "前の月の残りを繰り越します" : "繰越なしにしました（どの月も0円から）"); };
 $("pq").oninput = () => {
   const q = normName($("pq").value); if (!q) { $("pres").innerHTML = ""; return; }
@@ -2302,7 +2479,7 @@ function renderBank() {
   const on = bankOn(b.id, month);
   $("bankOnChk").checked = on;
   $("bankOnLbl").textContent = `${mLabel(month)}の通帳を家計簿に反映する`;
-  $("bankOnSub").textContent = on ? "この月の「家計簿に入れる」引き落とし・「収入に足す」入金・ATM引き出しを、家計簿・繰越・財布に入れます。" : "⚠ 反映していません。この月の通帳の引き落とし・収入は、家計簿にも繰越（残り）にも入りません。";
+  $("bankOnSub").textContent = (state.startYm && month < state.startYm ? `（家計簿をつけ始めた${mLabel(state.startYm)}より前の月なので、最初は反映しません）` : "") + (on ? "この月の「家計簿に入れる」引き落とし・「収入に足す」入金・ATM引き出しを、家計簿・繰越・財布に入れます。" : "⚠ 反映していません。この月の通帳の引き落とし・収入は、家計簿にも繰越（残り）にも入りません。");
   const ms = [...new Set(rows.map(r => r.date.slice(0, 7)))].sort().reverse();
   $("bankMonths").innerHTML = ms.length > 1 || (ms.length && ms[0] !== month) ? `<span class="muted" style="font-size:12px;width:100%">月ごとの反映（押すと切り替わります）</span>` + ms.map(ym => `<button type="button" data-bym="${ym}" class="${bankOn(b.id, ym) ? "on" : ""}">${bankOn(b.id, ym) ? "✓ " : ""}${mLabel(ym)}</button>`).join("") : "";
   $("bankRows").innerHTML = rows.length ? `<div class="tablebox" style="max-height:420px"><table><thead><tr><th>日付</th><th>内容</th><th class="num">出金</th><th class="num">入金</th><th class="num">残高</th></tr></thead><tbody>${rows.map(r =>
@@ -2329,7 +2506,8 @@ $("bankOnChk").onchange = e => { setBankOn(curBank, month, e.target.checked); };
 $("bankMonths").addEventListener("click", e => { const t = e.target.closest("[data-bym]"); if (t) setBankOn(curBank, t.dataset.bym, !bankOn(curBank, t.dataset.bym)); });
 function setBankOn(bid, ym, on) {
   state.bankOff = state.bankOff || {};
-  if (on) delete state.bankOff[bid + "|" + ym]; else state.bankOff[bid + "|" + ym] = true;
+  const before = state.startYm && ym < state.startYm;
+  if (on) { if (before) state.bankOff[bid + "|" + ym] = false; else delete state.bankOff[bid + "|" + ym]; } else { if (before) delete state.bankOff[bid + "|" + ym]; else state.bankOff[bid + "|" + ym] = true; }
   save(); render(); toast(`${mLabel(ym)}の通帳を${on ? "家計簿に反映しました" : "家計簿から外しました"}`);
 }
 $("bankRows").addEventListener("click", e => { const tr = e.target.closest("[data-brow]"); if (tr) editBankRow(curBank, tr.dataset.brow); });
@@ -2439,9 +2617,14 @@ async function onBankFile(file) {
     renderBankConfirm(b, rows);
   } catch (e) { openPanel(`<p class="err">${esc(e && e.code === "refused" && e.message ? "読み取れませんでした：" + e.message : errMsg(e))}</p><p class="muted">記帳したページ全体が入るよう、真上から明るい場所で撮ってください。</p><div class="row" style="justify-content:flex-end"><button class="btn" onclick="closePanel()">閉じる</button></div>`); }
 }
+const ymLabel = ym => `${+ym.slice(0, 4)}年${+ym.slice(5)}月`;
 function renderBankConfirm(b, rows) {
   const cs = [UNSET, ...catNames()];
-  openPanel(`<p style="margin:0 0 4px;text-align:right"><button class="repl" id="bcReport">⚑ AIの答えを報告</button></p><h2>${esc(b.name)}：読み取った行</h2>
+  const calcOff = () => [...new Set(rows.filter(r => !r.dup && ((r.use && r.out) || (r.inc && r.in))).map(r => r.date.slice(0, 7)).filter(ym => !bankOn(b.id, ym)))].sort();
+  const offM = calcOff();
+  const offBox = offM.length ? `<div class="err" style="margin:0 0 10px;padding:8px 10px;border-radius:10px">⚠ ${offM.map(ymLabel).join("・")}は、${state.startYm && offM.some(ym => ym < state.startYm) ? `家計簿をつけ始めた月（${ymLabel(state.startYm)}）より前なので、` : "通帳の反映を外している月なので、"}このまま保存しても家計簿・収入には入りません。
+    <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">${offM.map(ym => `<button class="btn sm" data-bon="${ym}">${+ym.slice(5)}月も反映する</button>`).join("")}${state.startYm && offM[0] < state.startYm ? `<button class="btn sm" id="bcStart">つけ始めた月を${ymLabel(offM[0])}にする</button>` : ""}</div></div>` : "";
+  openPanel(`<p style="margin:0 0 4px;text-align:right"><button class="repl" id="bcReport">⚑ AIの答えを報告</button></p><h2>${esc(b.name)}：読み取った行</h2>${offBox}
     <p class="muted" style="margin-top:0">内容と種類を確かめてください。光熱費などの引き落としは「家計簿に入れる」にチェックすると、その費目で記録します。カードの引き落としは、買い物をレシートで記録していれば二重になるので入れません。ATM引き出しは財布に移ったお金として数えます。</p>
     ${rows.map((r, i) => `<div class="item" style="grid-template-columns:1fr 1fr;${r.dup ? "opacity:.5" : ""}">
       <div><b>${md(r.date)}</b> ${esc(r.desc)}${r.dup ? ' <span class="muted">（登録済み）</span>' : ""}${r.known ? ' <span class="muted">📒前と同じ分類</span>' : ""}</div>
@@ -2457,12 +2640,16 @@ function renderBankConfirm(b, rows) {
     const r = rows[+el.dataset.i], k = el.dataset.bk;
     if (el.type === "checkbox") r[k] = el.checked; else r[k] = el.value;
     if (k === "kind") { r.use = r.kind === "bill"; r.inc = r.kind === "salary"; renderBankConfirm(b, rows); }
+    else if (k === "use" || k === "inc") renderBankConfirm(b, rows);
     if (k === "cat") el.classList.toggle("unset", el.value === UNSET);
   }));
   $("panel").querySelectorAll('input[data-bk="name"]').forEach(el => el.addEventListener("input", () => { rows[+el.dataset.i].name = el.value; }));
   $("bcNo").onclick = closePanel;
   $("bcReport").onclick = () => openReport(`${b.name}の通帳\n` + rows.map(r => `${r.date} ${r.desc}→${r.name} 出${r.out} 入${r.in} [${r.kind}${r.cat ? "・" + r.cat : ""}]`).join("\n"), () => renderBankConfirm(b, rows));
+  $("panel").querySelectorAll("[data-bon]").forEach(el => el.onclick = () => { setBankOn(b.id, el.dataset.bon, true); renderBankConfirm(b, rows); });
+  if ($("bcStart")) $("bcStart").onclick = () => { state.startYm = offM[0]; save(); render(); toast(`つけ始めた月を${ymLabel(offM[0])}にしました`); renderBankConfirm(b, rows); };
   $("bcOk").onclick = () => {
+    const offM = calcOff();
     b.rows = b.rows || []; state.bankDict = state.bankDict || {}; let nE = 0, nI = 0;
     for (const r of rows) {
       if (r.dup) continue;
@@ -2476,7 +2663,7 @@ function renderBankConfirm(b, rows) {
       b.rows.push(row);
     }
     save(); closePanel(); render();
-    toast(`保存しました${nE ? `（家計簿に${nE}件）` : ""}${nI ? `（収入に${nI}件）` : ""}`);
+    toast(`保存しました${nE ? `（家計簿に${nE}件）` : ""}${nI ? `（収入に${nI}件）` : ""}${offM.length ? `。${offM.map(ym => +ym.slice(5) + "月").join("・")}は反映していません（通帳の画面で月ごとに反映できます）` : ""}`);
   };
 }
 $("bankCam").onchange = e => { onBankFile(e.target.files[0]); e.target.value = ""; };
@@ -2540,8 +2727,10 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
 (async () => {
   const s = await store.get();
   if (s && s.tpl && Array.isArray(s.entries)) state = Object.assign({ dict: {}, income: {}, fixed: [], fixedDone: {}, review: {}, loans: [], banks: [], bankDict: {}, wallet: null, jobs: [], pending: [], jobTotal: 0 }, s);
+  if (state.startYm === undefined) state.startYm = state.entries.length || (state.banks || []).length || Object.keys(state.income || {}).length ? null : todayStr().slice(0, 7);
   migrateBank(); applyFixed();
   render(); renderJobBar(); hideSplash(); refreshAI();
+  setupBackKey();
   // 前に止まった読み取りがあれば続きから
   if ((state.jobs || []).length) { for (let i = 0; i < 40 && !sample; i++) await sleep(250); runJobs(); }
 })();
