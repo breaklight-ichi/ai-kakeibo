@@ -196,7 +196,9 @@ tfoot td.day{background:linear-gradient(var(--soft),var(--soft)),var(--card)}
 label.f{display:block;font-size:12px;color:var(--sub);margin:6px 0 2px}
 input.t,select.t{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:16px;background:var(--card);color:var(--ink);font-family:inherit;min-width:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.item{display:grid;grid-template-columns:1fr 6.5em;gap:6px;border-top:1px dashed var(--line);padding:8px 0}
+.itemHead{display:grid;grid-template-columns:1fr 7.5em;gap:6px;font-size:12px;font-weight:bold;color:var(--sub);margin:10px 0 -4px}.itemHead span:last-child{text-align:right;padding-right:4px}
+.item .price{border:2px solid var(--accent);font-weight:bold}
+.item{display:grid;grid-template-columns:1fr 7.5em;gap:6px;border-top:1px dashed var(--line);padding:8px 0}
 .item .cat{grid-column:1/2}
 .item .x{grid-column:2/3;justify-self:end}
 .diff{background:var(--soft);border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0}
@@ -502,7 +504,7 @@ body.fsXL .navbar b{font-size:17px}
     <div class="card">
       <h2>データについて</h2>
       <p class="muted" style="margin:0">記録はこの端末の中だけに保存されます。AIに送るのは読み取る瞬間の画像と、ふり返りのときの集計だけで、あなたの鍵でGoogle（Gemini）へ直接送ります。運営者には届きません。</p>
-      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 2</p>
+      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 3</p>
       <div class="row" style="margin-top:8px"><button class="btn sm warn" id="wipe">記録をすべて消す</button></div>
     </div>
   </section>
@@ -1483,22 +1485,24 @@ function renderDraft() {
   d.bag = d.bag || { has: false, price: 0 }; d.tax = d.tax || { amount: 0, incl: true };
   openPanel(`
     ${d.thumb ? `<img class="thumb" src="${d.thumb}" alt="" id="dThumb" style="cursor:zoom-in">${(d.full || d.hasImg) ? `<p class="muted" style="text-align:center;margin:-6px 0 8px">画像を押すと大きく見られます</p>` : ""}` : ""}
-    ${!d.id && !d.busy && d.store !== undefined && (d.items || []).length && !d.err ? `<p style="margin:0 0 4px;text-align:right"><button class="repl" id="dReport">⚑ AIの答えを報告</button></p>` : ""}
-    <h2>${d.id ? "記録を直す" : "読み取った内容"}${d.qn > 1 ? `<span class="muted" style="font-weight:400">（${d.qi}/${d.qn}枚目）</span>` : ""}${d.pid ? `<span class="muted" style="font-weight:400">（残り${(state.pending || []).length}件）</span>` : ""}</h2>
+    ${!d.id && !d.manual && !d.busy && d.store !== undefined && (d.items || []).length && !d.err ? `<p style="margin:0 0 4px;text-align:right"><button class="repl" id="dReport">⚑ AIの答えを報告</button></p>` : ""}
+    <h2>${d.id ? "記録を直す" : d.manual ? "手で入力" : "読み取った内容"}${d.qn > 1 ? `<span class="muted" style="font-weight:400">（${d.qi}/${d.qn}枚目）</span>` : ""}${d.pid ? `<span class="muted" style="font-weight:400">（残り${(state.pending || []).length}件）</span>` : ""}</h2>
     ${d.qn > 1 && d.qi === 1 ? `<p class="note" style="margin:0 0 8px">1枚の写真から${d.qn}枚のレシートを見つけて、1枚ずつ切り分けて読みました。1枚ずつ確かめて書き込んでください。</p>` : ""}
     ${d.note ? `<p class="note" style="margin:0 0 8px">${esc(d.note)}</p>` : ""}
     ${(() => { const du = findDup(d); return du ? `<p class="diff bad" style="margin:0 0 8px">⚠ 同じ日・同じ金額の記録がもうあります（${esc(du.store || "店名なし")} ${yen(entrySum(du))}）。二重に書き込んでいないか確かめてください。</p>` : ""; })()}
-    ${d.err ? `<p class="err" style="white-space:pre-wrap">${esc(d.err)}</p>` : `<p class="muted" style="margin-top:0">${d.id ? "" : "違うところがあれば直してから書き込んでください。"}</p>`}
+    ${d.err ? `<p class="err" style="white-space:pre-wrap">${esc(d.err)}</p>` : `<p class="muted" style="margin-top:0">${d.id || d.manual ? "" : "違うところがあれば直してから書き込んでください。"}</p>`}
     <div class="grid2">
       <div><label class="f">日付</label><input class="t" type="date" id="dDate" value="${esc(d.date)}"></div>
       <div><label class="f">支払い</label><input class="t" id="dPay" value="${esc(d.pay)}" placeholder="現金など"></div>
     </div>
     ${plus().pay ? `<div class="paychips" id="dPayChips">${(() => { const cur = (d.pay || "").split(/[・、,，\s]+/).filter(Boolean); return PAY_OPTS.concat(cur.filter(x => !PAY_OPTS.includes(x))).map(o => `<button type="button" class="${cur.includes(o) ? "on" : ""}" data-pay="${esc(o)}">${esc(o)}</button>`).join(""); })()}</div>` : ""}
     <label class="f">店名</label><input class="t" id="dStore" value="${esc(d.store)}" placeholder="店名">
-    <div style="margin-top:8px">${d.items.map((it, i) => `
+    ${d.manual ? `<p class="note" style="margin:8px 0 0">品目（何を買ったか）を左に、<b>金額を右の緑の枠</b>に入れてください。品目が2つ以上なら「＋ 品目を足す」で行を増やせます。</p>` : ""}
+    <div class="itemHead"><span>品目</span><span>金額（円）</span></div>
+    <div>${d.items.map((it, i) => `
       <div class="item">
         <input class="t" data-k="name" data-i="${i}" value="${esc(it.name)}" placeholder="品目">
-        <input class="t" data-k="price" data-i="${i}" value="${it.price || ""}" inputmode="numeric" placeholder="金額" style="text-align:right">
+        <input class="t price" data-k="price" data-i="${i}" value="${it.price || ""}" inputmode="numeric" placeholder="金額 円" style="text-align:right">
         ${(it.disc || it.raw || it.guess || it.known) ? `<div class="muted" style="grid-column:1/3;margin-top:-4px;font-size:12px">${[
           it.raw ? `印字：${esc(it.raw)}` : "", it.known ? "📒 前に選んだ費目" : "", it.guess ? `<span style="color:var(--warn)">🤔 AIの推測</span>` : "",
           it.disc ? `🏷 ${it.disc.toLocaleString("ja-JP")}円 値引き済み` : ""].filter(Boolean).join("　")}</div>` : ""}
@@ -1773,6 +1777,20 @@ function keyStatus() {
   $("aiModel").value = ui().aiModel || "fast";
 }
 function openKeySettings() { goPage("tpl"); setTimeout(() => { $("keyCard").scrollIntoView({ block: "start" }); }, 50); }
+// 鍵がないまま「📷 レシートを撮る／🖼 写真から」を押したら、カメラを開く前に案内を出す（設定の説明に気づかない人のため）
+["camFile", "picFile"].forEach(id => { const inp = $(id); if (!inp) return; inp.closest("label").addEventListener("click", ev => {
+  if (sample || inp.dataset.go) { delete inp.dataset.go; return; }
+  ev.preventDefault();
+  openPanel(`<h2>🔑 AIの鍵がまだ設定されていません</h2>
+    <p style="margin-top:0">レシートをAIに読ませるには、Googleから<b>無料</b>でもらえる「鍵」（APIキー）を、<b>最初に1回だけ</b>設定します（3分ほど）。</p>
+    <p class="muted">鍵がなくても、品目と金額を手で入力すれば家計簿は使えます。</p>
+    <button class="btn main" id="nkSet" style="width:100%;margin-top:6px">🔑 鍵を設定する（おすすめ）</button>
+    <div class="row" style="margin-top:8px"><button class="btn" id="nkHand">✍ 手で入力する</button><button class="btn" id="nkPhoto">写真を付けて手で入力</button><button class="btn" id="nkNo">やめる</button></div>`);
+  $("nkSet").onclick = () => { closePanel(); openKeySettings(); };
+  $("nkHand").onclick = () => { closePanel(); $("addManual").click(); };
+  $("nkPhoto").onclick = () => { closePanel(); inp.dataset.go = 1; inp.click(); };
+  $("nkNo").onclick = () => closePanel();
+}); });
 $("keyEye").onclick = () => { const i = $("keyInput"), on = i.type === "password"; i.type = on ? "text" : "password"; $("keyEye").textContent = on ? "かくす" : "表示"; };
 $("keySave").onclick = async () => {
   const k = $("keyInput").value.trim().replace(/\s+/g, "");
@@ -1804,7 +1822,7 @@ function openReport(summary, onBack) {
   $("rpMail").onclick = () => { setTimeout(back, 600); location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("AIの答えの報告（AIレシート家計簿）")}&body=${encodeURIComponent(body())}`; };
   $("rpCopy").onclick = async () => { try { await navigator.clipboard.writeText(body()); toast(`コピーしました。${CONTACT} に送ってください`); back(); } catch (e) { toast(CONTACT + " に送ってください"); } };
 }
-const APP_VER = "2";
+const APP_VER = "3";
 $("plusBatch").onchange = e => { plus().batch = e.target.checked; save(); toast(e.target.checked ? "まとめて読み取りをONにしました" : "まとめて読み取りをOFFにしました"); };
 $("plusPay").onchange = e => { plus().pay = e.target.checked; save(); };
 $("plusForm").onchange = e => { plus().form = e.target.checked; save(); };
@@ -1849,7 +1867,7 @@ function askDelEntry(id) {
   if ($("ldImg")) $("ldImg").onclick = () => { store.delImgs([id]); e.hasImg = false; save(); closePanel(true); render(); updImgInfo(); toast("画像を消しました（記録は残っています）"); };
 }
 $("panel").addEventListener("click", e => { const r = e.target.closest(".entry[data-e]"); if (r && !draft) openEntry(r.dataset.e); });
-$("addManual").onclick = () => { draft = { id: null, thumb: "", date: month === todayStr().slice(0, 7) ? todayStr() : month + "-01", store: "", items: [{ name: "", price: 0, cat: catNames()[0] }], total: 0, pay: "" }; renderDraft(); };
+$("addManual").onclick = () => { draft = { id: null, manual: true, thumb: "", date: month === todayStr().slice(0, 7) ? todayStr() : month + "-01", store: "", items: [{ name: "", price: 0, cat: catNames()[0] }], total: 0, pay: "" }; renderDraft(); };
 
 $("sheet").addEventListener("change", e => {
   const n = e.target.dataset && e.target.dataset.bud; if (n === undefined) return;

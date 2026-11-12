@@ -1,6 +1,6 @@
 // AIレシート家計簿：オフラインでも画面が開くように、アプリ本体だけを保存する
 // （AIへの通信やレシートの画像は保存しない。記録は端末のIndexedDBにある）
-const CACHE = "kakeibo-v2";
+const CACHE = "kakeibo-v3";
 const FILES = ["./", "index.html", "privacy.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
