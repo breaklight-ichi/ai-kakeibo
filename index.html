@@ -56,6 +56,10 @@ tbody tr[data-rcat]{transition:transform .12s}tbody tr.rdrag{transition:none}
 .cren{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
 .keystate{font-weight:700;padding:6px 10px;border-radius:8px;margin:0 0 8px}.keystate.ok{background:var(--soft);color:var(--accent)}.keystate.ng{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
 #keyCard details summary{cursor:pointer;color:var(--accent)}
+.nkOff{display:flex;gap:6px;align-items:flex-start;margin-top:10px;font-size:13px;color:var(--sub)}.nkOff input{margin-top:3px}
+.introFig{width:100%;height:auto;margin:4px 0 10px}.introFig .fBox{fill:var(--soft);stroke:var(--line)}.introFig .fGo{stroke:var(--accent);stroke-width:2}
+.introFig .fScr{fill:var(--card);stroke:var(--line)}.introFig .fNum{fill:var(--accent);font-weight:700;font-size:14px}.introFig .fTx{fill:var(--ink);font-weight:700}
+.introFig .fSm{fill:var(--sub);font-size:8.5px}.introFig .fSub{fill:var(--sub);font-size:10px}.introFig .fArr{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #keyCard table th,#keyCard table td{border:1px solid var(--line);padding:4px 6px;white-space:normal;position:static}
 .repl{background:none;border:0;color:var(--sub);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0}
 .incx{margin:4px 0 8px}.incx summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:14px;padding:4px 0}
@@ -504,7 +508,7 @@ body.fsXL .navbar b{font-size:17px}
     <div class="card">
       <h2>データについて</h2>
       <p class="muted" style="margin:0">記録はこの端末の中だけに保存されます。AIに送るのは読み取る瞬間の画像と、ふり返りのときの集計だけで、あなたの鍵でGoogle（Gemini）へ直接送ります。運営者には届きません。</p>
-      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 3</p>
+      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 4</p>
       <div class="row" style="margin-top:8px"><button class="btn sm warn" id="wipe">記録をすべて消す</button></div>
     </div>
   </section>
@@ -696,9 +700,13 @@ gemText.json = async (prompt, opts = {}) => {
 gemText.test = async () => !!(await geminiCall({ contents: [{ role: "user", parts: [{ text: "「OK」とだけ返してください。" }] }] }));
 function refreshAI() {
   sample = GEM.get() ? gemText : null;
-  $("unavail").innerHTML = sample ? "" : `※ AIの鍵（Gemini）がまだ設定されていません。レシートを読むには、最初に1回だけ設定してください（手で入力する機能はそのまま使えます）。<br><button class="btn sm main" id="goKeyTop" style="margin-top:6px">🔑 AIの設定を開く</button>`;
+  const noAI = !sample && state.ui && state.ui.noAI;
+  $("unavail").innerHTML = sample ? "" : noAI
+    ? `✍ AIを使わずに、手で入力して使っています。「📷 レシートを撮る」を押すと、写真を見ながら品目と金額を入れられます。<br><span class="row" style="margin-top:6px"><button class="btn sm main" id="goHandTop">✍ 手で入力</button><button class="btn sm" id="goKeyTop">🔑 AIで読みたいとき</button></span>`
+    : `※ AIの鍵（Gemini）がまだ設定されていません。レシートを読むには、最初に1回だけ設定してください（手で入力する機能はそのまま使えます）。<br><span class="row" style="margin-top:6px"><button class="btn sm main" id="goKeyTop">🔑 AIの設定を開く</button><button class="btn sm" id="goHandTop">✍ 手で入力</button></span>`;
   $("unavail").classList.toggle("hidden", !!sample);
   if ($("goKeyTop")) $("goKeyTop").onclick = () => openKeySettings();
+  if ($("goHandTop")) $("goHandTop").onclick = () => $("addManual").click();
   if (typeof keyStatus === "function") keyStatus();
 }
 setTimeout(refreshAI, 0);
@@ -1381,8 +1389,8 @@ async function onReceiptFile(file, mode = "pick") {
   draft = blankDraft(thumb, null);
   const token = draft;
   const status = t => openPanel(`<img class="thumb" src="${thumb}" alt=""><div class="spin"></div><p style="text-align:center;margin:0"><b>${t}</b></p><p class="muted" style="text-align:center">10〜40秒ほどかかります</p>`);
-  status("レシートを読み取っています…");
-  if (!sample) { draft.full = await shrink(im, 1400, .8).toBlob(); draft.busy = false; draft.err = "AIの鍵がまだ設定されていないため、手で入力してください（⚙設定の「🔑 AIの設定」で設定すると、AIが読み取ります）。"; draft.items = [{ name: "", price: 0, cat: catNames()[0] }]; renderDraft(); return; }
+  status(sample ? "レシートを読み取っています…" : "写真を開いています…");
+  if (!sample) { draft.full = await shrink(im, 1400, .8).toBlob(); draft.busy = false; draft.manual = true; draft.note = ui().noAI ? "" : "AIの鍵がまだ設定されていないので、写真を見ながら手で入力してください（⚙設定の「🔑 AIの設定」で鍵を入れると、AIが読み取ります）。"; draft.items = [{ name: "", price: 0, cat: catNames()[0] }]; renderDraft(); return; }
   let ds;
   try { ds = await analyzeImage(im, mode, (i, n) => { if (draft === token) status(i ? `${n}枚のレシートを1枚ずつ読んでいます…（${i}/${n}）` : `${n}枚のレシートが写っています。1枚ずつに分けています…`); }); }
   catch (e) { ds = [failDraft(blankDraft(thumb, await shrink(im, 1400, .8).toBlob()), e)]; }
@@ -1486,7 +1494,7 @@ function renderDraft() {
   openPanel(`
     ${d.thumb ? `<img class="thumb" src="${d.thumb}" alt="" id="dThumb" style="cursor:zoom-in">${(d.full || d.hasImg) ? `<p class="muted" style="text-align:center;margin:-6px 0 8px">画像を押すと大きく見られます</p>` : ""}` : ""}
     ${!d.id && !d.manual && !d.busy && d.store !== undefined && (d.items || []).length && !d.err ? `<p style="margin:0 0 4px;text-align:right"><button class="repl" id="dReport">⚑ AIの答えを報告</button></p>` : ""}
-    <h2>${d.id ? "記録を直す" : d.manual ? "手で入力" : "読み取った内容"}${d.qn > 1 ? `<span class="muted" style="font-weight:400">（${d.qi}/${d.qn}枚目）</span>` : ""}${d.pid ? `<span class="muted" style="font-weight:400">（残り${(state.pending || []).length}件）</span>` : ""}</h2>
+    <h2>${d.id ? "記録を直す" : d.manual ? (d.thumb ? "手で入力（写真を見ながら）" : "手で入力") : "読み取った内容"}${d.qn > 1 ? `<span class="muted" style="font-weight:400">（${d.qi}/${d.qn}枚目）</span>` : ""}${d.pid ? `<span class="muted" style="font-weight:400">（残り${(state.pending || []).length}件）</span>` : ""}</h2>
     ${d.qn > 1 && d.qi === 1 ? `<p class="note" style="margin:0 0 8px">1枚の写真から${d.qn}枚のレシートを見つけて、1枚ずつ切り分けて読みました。1枚ずつ確かめて書き込んでください。</p>` : ""}
     ${d.note ? `<p class="note" style="margin:0 0 8px">${esc(d.note)}</p>` : ""}
     ${(() => { const du = findDup(d); return du ? `<p class="diff bad" style="margin:0 0 8px">⚠ 同じ日・同じ金額の記録がもうあります（${esc(du.store || "店名なし")} ${yen(entrySum(du))}）。二重に書き込んでいないか確かめてください。</p>` : ""; })()}
@@ -1779,16 +1787,18 @@ function keyStatus() {
 function openKeySettings() { goPage("tpl"); setTimeout(() => { $("keyCard").scrollIntoView({ block: "start" }); }, 50); }
 // 鍵がないまま「📷 レシートを撮る／🖼 写真から」を押したら、カメラを開く前に案内を出す（設定の説明に気づかない人のため）
 ["camFile", "picFile"].forEach(id => { const inp = $(id); if (!inp) return; inp.closest("label").addEventListener("click", ev => {
-  if (sample || inp.dataset.go) { delete inp.dataset.go; return; }
+  if (sample || inp.dataset.go || ui().noAI) { delete inp.dataset.go; return; }
   ev.preventDefault();
   openPanel(`<h2>🔑 AIの鍵がまだ設定されていません</h2>
     <p style="margin-top:0">レシートをAIに読ませるには、Googleから<b>無料</b>でもらえる「鍵」（APIキー）を、<b>最初に1回だけ</b>設定します（3分ほど）。</p>
     <p class="muted">鍵がなくても、品目と金額を手で入力すれば家計簿は使えます。</p>
     <button class="btn main" id="nkSet" style="width:100%;margin-top:6px">🔑 鍵を設定する（おすすめ）</button>
-    <div class="row" style="margin-top:8px"><button class="btn" id="nkHand">✍ 手で入力する</button><button class="btn" id="nkPhoto">写真を付けて手で入力</button><button class="btn" id="nkNo">やめる</button></div>`);
+    <div class="row" style="margin-top:8px"><button class="btn" id="nkHand">✍ 手で入力する</button><button class="btn" id="nkPhoto">写真を付けて手で入力</button><button class="btn" id="nkNo">やめる</button></div>
+    <label class="nkOff"><input type="checkbox" id="nkOff"> 次からはこの案内を出さない（AIを使わず、手で入力して使う）</label>`);
+  const off = () => { if ($("nkOff").checked) { ui().noAI = true; save(); refreshAI(); toast("次からは、写真を見ながら手で入力する画面になります"); } };
   $("nkSet").onclick = () => { closePanel(); openKeySettings(); };
-  $("nkHand").onclick = () => { closePanel(); $("addManual").click(); };
-  $("nkPhoto").onclick = () => { closePanel(); inp.dataset.go = 1; inp.click(); };
+  $("nkHand").onclick = () => { off(); closePanel(); $("addManual").click(); };
+  $("nkPhoto").onclick = () => { off(); closePanel(); inp.dataset.go = 1; inp.click(); };
   $("nkNo").onclick = () => closePanel();
 }); });
 $("keyEye").onclick = () => { const i = $("keyInput"), on = i.type === "password"; i.type = on ? "text" : "password"; $("keyEye").textContent = on ? "かくす" : "表示"; };
@@ -1798,7 +1808,7 @@ $("keySave").onclick = async () => {
   const old = GEM.get();
   if (!GEM.set(k)) { $("keyMsg").textContent = "この端末に保存できませんでした（プライベートモードでは保存できません）。"; return; }
   $("keySave").disabled = true; $("keyMsg").textContent = "Geminiにつながるか試しています…";
-  try { await gemText.test(); $("keyInput").value = ""; $("keyMsg").textContent = "✓ つながりました！AIでレシートを読めます。"; }
+  try { await gemText.test(); if (ui().noAI) { delete ui().noAI; save(); } $("keyInput").value = ""; $("keyMsg").textContent = "✓ つながりました！AIでレシートを読めます。"; }
   catch (e) { const ng = e && (e.code === "bad_key" || e.code === "key_denied"); if (ng) GEM.set(old); else $("keyInput").value = ""; $("keyMsg").textContent = (ERR[e && e.code] || "うまくいきませんでした。") + (ng ? "" : "（鍵は保存しました。つながったときに、レシートを読んで試してください）"); }
   finally { $("keySave").disabled = false; refreshAI(); if (sample && (state.jobs || []).length) runJobs(); }
 };
@@ -1808,6 +1818,34 @@ $("keyDel").onclick = e => {
   GEM.set(""); refreshAI(); $("keyMsg").textContent = "この端末から鍵を消しました。Google側の鍵は残るので、また貼り付ければ使えます。";
 };
 $("aiModel").onchange = e => { ui().aiModel = e.target.value; save(); toast(e.target.value === "accurate" ? "正確さ優先にしました" : "速さ優先にしました"); };
+
+// ===== はじめに（初めて開いたとき、鍵がなければ1回だけ） =====
+function showIntro() {
+  if (GEM.get() || ui().introSeen || !$("ov").classList.contains("hidden")) return;
+  ui().introSeen = 1; save();
+  openPanel(`<h2>👋 ようこそ！</h2>
+    <p style="margin-top:0">このアプリは、<b>レシートの写真をAIが読んで</b>、家計簿に書き込みます。<br>AIを使うには、Googleから<b>無料</b>でもらえる「鍵」（APIキー）を、<b>最初に1回だけ</b>このアプリに入れます。</p>
+    <svg class="introFig" viewBox="0 0 330 122" role="img" aria-label="鍵の入れ方：1 Googleのページで鍵をもらう、2 コピーする、3 このアプリの設定に貼り付ける">
+      <g font-size="11" text-anchor="middle">
+        <rect x="4" y="6" width="92" height="84" rx="10" class="fBox"/><text x="50" y="24" class="fNum">①</text>
+        <rect x="14" y="34" width="72" height="22" rx="5" class="fScr"/><text x="50" y="49" class="fSm">Google AI Studio</text>
+        <text x="50" y="76" class="fTx">鍵をもらう</text>
+        <path d="M100 48 h16 m-6 -5 l6 5 l-6 5" class="fArr"/>
+        <rect x="120" y="6" width="92" height="84" rx="10" class="fBox"/><text x="166" y="24" class="fNum">②</text>
+        <rect x="136" y="34" width="60" height="22" rx="5" class="fScr"/><text x="166" y="49" class="fSm">AIza…… 📋</text>
+        <text x="166" y="76" class="fTx">コピーする</text>
+        <path d="M216 48 h16 m-6 -5 l6 5 l-6 5" class="fArr"/>
+        <rect x="236" y="6" width="90" height="84" rx="10" class="fBox fGo"/><text x="281" y="24" class="fNum">③</text>
+        <rect x="246" y="34" width="70" height="22" rx="5" class="fScr"/><text x="281" y="49" class="fSm">ここに貼り付け</text>
+        <text x="281" y="76" class="fTx">このアプリに貼る</text>
+        <text x="50" y="110" class="fSub">無料・3分ほど</text><text x="166" y="110" class="fSub">ボタン1つ</text><text x="281" y="110" class="fSub">⚙設定 → 🔑AIの設定</text>
+      </g></svg>
+    <button class="btn main" id="inKey" style="width:100%;margin-top:4px">🔑 AIで読む（いま鍵を入れる・3分ほど）</button>
+    <button class="btn" id="inHand" style="width:100%;margin-top:8px">✍ まずは手で入力して使う（鍵なし）</button>
+    <p class="muted" style="margin:8px 0 0;font-size:13px">手で入力するときは、品目（何を買ったか）と金額を入れるだけです。あとから「⚙ 設定」→「🔑 AIの設定」で、いつでもAIを使えるようにできます。</p>`);
+  $("inKey").onclick = () => { closePanel(); openKeySettings(); };
+  $("inHand").onclick = () => { ui().noAI = true; save(); closePanel(); refreshAI(); toast("手で入力して使います。「📷 レシートを撮る」でも写真を見ながら入力できます"); };
+}
 
 // ===== AIの答えを報告（Google Playの決まり：AIの不適切な答えを報告できること） =====
 const CONTACT = "breaklight.ichi@gmail.com";
@@ -1822,7 +1860,7 @@ function openReport(summary, onBack) {
   $("rpMail").onclick = () => { setTimeout(back, 600); location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("AIの答えの報告（AIレシート家計簿）")}&body=${encodeURIComponent(body())}`; };
   $("rpCopy").onclick = async () => { try { await navigator.clipboard.writeText(body()); toast(`コピーしました。${CONTACT} に送ってください`); back(); } catch (e) { toast(CONTACT + " に送ってください"); } };
 }
-const APP_VER = "3";
+const APP_VER = "4";
 $("plusBatch").onchange = e => { plus().batch = e.target.checked; save(); toast(e.target.checked ? "まとめて読み取りをONにしました" : "まとめて読み取りをOFFにしました"); };
 $("plusPay").onchange = e => { plus().pay = e.target.checked; save(); };
 $("plusForm").onchange = e => { plus().form = e.target.checked; save(); };
@@ -2747,7 +2785,7 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
   if (s && s.tpl && Array.isArray(s.entries)) state = Object.assign({ dict: {}, income: {}, fixed: [], fixedDone: {}, review: {}, loans: [], banks: [], bankDict: {}, wallet: null, jobs: [], pending: [], jobTotal: 0 }, s);
   if (state.startYm === undefined) state.startYm = state.entries.length || (state.banks || []).length || Object.keys(state.income || {}).length ? null : todayStr().slice(0, 7);
   migrateBank(); applyFixed();
-  render(); renderJobBar(); hideSplash(); refreshAI();
+  render(); renderJobBar(); hideSplash(); refreshAI(); setTimeout(showIntro, 1900);
   setupBackKey();
   // 前に止まった読み取りがあれば続きから
   if ((state.jobs || []).length) { for (let i = 0; i < 40 && !sample; i++) await sleep(250); runJobs(); }
