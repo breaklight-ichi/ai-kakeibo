@@ -249,6 +249,11 @@ select.unset{border-color:var(--warn);color:var(--warn);font-weight:700}
 #splash .sp-b{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom));margin:0;font-size:20px;font-weight:800;letter-spacing:.32em;color:var(--ink);animation:spIn 1s .3s ease-out both}
 @keyframes spIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#splash .sp-c,#splash .sp-b{animation:none}}
+.nseg{display:flex;gap:0;margin:0 0 10px;border:1px solid var(--line);border-radius:999px;overflow:hidden;width:max-content}.nseg button{border:0;background:none;font:inherit;font-size:14px;padding:6px 16px;cursor:pointer;color:var(--sub)}.nseg button.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.nsec{margin:12px 0 4px;font-weight:700;font-size:14px}.nrow{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line)}.nrow .nm{flex:1;min-width:0}.nrow .nm small{display:block;color:var(--sub);font-size:12px;line-height:1.4}.nrow .v{text-align:right;font-weight:700;white-space:nowrap}.nrow .v small{display:block;font-weight:400;color:var(--sub);font-size:12px}
+.ntot{display:flex;justify-content:space-between;font-weight:700;font-size:17px;padding:10px 0 4px}.nbar{display:flex;height:18px;border-radius:6px;overflow:hidden;background:var(--line);margin:6px 0}.nbar i{display:block;height:100%}
+.nleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub)}.nleg b{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.nfl{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:2px 8px;margin-top:4px}.nfl label{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:14px;border-bottom:1px dashed var(--line)}.nfl label:last-child{border-bottom:0}.nfl small{color:var(--sub);margin-left:auto;white-space:nowrap}
 .chk{display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer}.chk input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--accent)}
 .paychips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
 .paychips button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
@@ -363,6 +368,9 @@ body.fsXL .navbar b{font-size:17px}
   </section>
 
   <section id="tab-chart" class="hidden">
+    <div class="card money" id="needCard"><h2>📅 来月の見通し<span class="muted" style="font-weight:400;font-size:13px">（これから必要なお金）</span></h2>
+      <div class="nseg" id="needSeg"><button type="button" data-p="next">来月</button><button type="button" data-p="rest">今月の残り</button></div>
+      <div id="needBody"></div></div>
     <div class="card"><h2 id="rvH">🤖 AIのふり返り</h2><div id="rvBody"></div>
       <div class="row" style="margin-top:8px"><button class="btn sm main" id="rvBtn">この月をふり返ってもらう</button></div></div>
     <div class="card chart"><h2>月ごとの支出と収入</h2><div class="legend" id="lgMonth"></div><div id="chMonth"></div><p class="muted" style="margin:4px 0 0">棒を押すと金額が出ます。</p></div>
@@ -432,6 +440,7 @@ body.fsXL .navbar b{font-size:17px}
       <label class="chk"><input type="checkbox" id="plusBatch"> <span><b>まとめて読み取り</b><br><span class="muted" style="font-size:12px">「🖼 写真から」でレシートの写真を2枚以上選んで、裏でまとめて読む</span></span></label>
       <label class="chk"><input type="checkbox" id="plusPay"> <span><b>支払い方法を選んで入れる</b><br><span class="muted" style="font-size:12px">現金・カードなどを一覧から選べる（いくつでも選べる）</span></span></label>
       <label class="chk"><input type="checkbox" id="plusForm"> <span><b>提出用の家計表（PDF）</b><br><span class="muted" style="font-size:12px">手元の家計簿用紙と同じ欄で、収入・支出・繰越を1か月1枚の家計表にして印刷できる</span></span></label>
+      <label class="chk"><input type="checkbox" id="plusNeed"> <span><b>来月の見通し</b><br><span class="muted" style="font-size:12px">「📊 グラフ」で、定期的に買う物・光熱費・ガソリン・固定費から、来月（今月の残り）に必要なお金と、節約しだいで残せるお金を出す</span></span></label>
       <label class="chk"><input type="checkbox" id="plusLoan"> <span><b>貸し借りを家計簿の表に載せる</b><br><span class="muted" style="font-size:12px">「🤝 貸し借り」の画面のチェックと同じです</span></span></label>
     </div>
     <div class="card">
@@ -508,7 +517,7 @@ body.fsXL .navbar b{font-size:17px}
     <div class="card">
       <h2>データについて</h2>
       <p class="muted" style="margin:0">記録はこの端末の中だけに保存されます。AIに送るのは読み取る瞬間の画像と、ふり返りのときの集計だけで、あなたの鍵でGoogle（Gemini）へ直接送ります。運営者には届きません。</p>
-      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 4</p>
+      <p style="margin:8px 0 0;font-size:14px"><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>　／　お問い合わせ：breaklight.ichi@gmail.com　／　版 5</p>
       <div class="row" style="margin-top:8px"><button class="btn sm warn" id="wipe">記録をすべて消す</button></div>
     </div>
   </section>
@@ -980,7 +989,7 @@ const PAGES = [
   { id: "loan", icon: "🤝", name: "貸し借り", desc: "知人・身内とのお金（仮想金額）" },
   { id: "list", icon: "🧾", name: "レシート", desc: "レシートの記録・直す、手で入力" },
   { id: "price", icon: "💴", name: "値段しらべ", desc: "商品をどの店でいくらで買ったか" },
-  { id: "chart", icon: "📊", name: "グラフ", desc: "支出の移り変わり・AIのふり返り" },
+  { id: "chart", icon: "📊", name: "グラフ", desc: "来月の見通し・支出の移り変わり・ふり返り" },
   { id: "bank", icon: "🏦", name: "通帳", desc: "通帳を撮って引き落としを家計簿へ" },
   { id: "export", icon: "📤", name: "書き出し", desc: "Excel・PDFで保存（パソコンで管理）", wide: true }
 ];
@@ -1020,7 +1029,7 @@ function applyLayout() {
   if ($("uiVert")) $("uiVert").value = ui().vert ? "1" : "";
   document.body.classList.toggle("fsL", ui().font === "L"); document.body.classList.toggle("fsXL", ui().font === "XL");
   if ($("uiFont")) $("uiFont").value = ui().font || "";
-  if ($("plusBatch")) { $("plusBatch").checked = !!plus().batch; $("plusPay").checked = !!plus().pay; $("plusForm").checked = !!plus().form; $("plusLoan").checked = !!state.loanInTable; }
+  if ($("plusBatch")) { $("plusBatch").checked = !!plus().batch; $("plusPay").checked = !!plus().pay; $("plusForm").checked = !!plus().form; $("plusNeed").checked = !!plus().need; $("plusLoan").checked = !!state.loanInTable; }
 }
 const TOP_PRESET = { s: .36, m: .46, l: .58 };
 // 境界線の位置：起動したときはボタンが全部見える位置、ボタン・スイッチ・戻る/進むを押すと中間に戻る
@@ -1860,10 +1869,11 @@ function openReport(summary, onBack) {
   $("rpMail").onclick = () => { setTimeout(back, 600); location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("AIの答えの報告（AIレシート家計簿）")}&body=${encodeURIComponent(body())}`; };
   $("rpCopy").onclick = async () => { try { await navigator.clipboard.writeText(body()); toast(`コピーしました。${CONTACT} に送ってください`); back(); } catch (e) { toast(CONTACT + " に送ってください"); } };
 }
-const APP_VER = "4";
+const APP_VER = "5";
 $("plusBatch").onchange = e => { plus().batch = e.target.checked; save(); toast(e.target.checked ? "まとめて読み取りをONにしました" : "まとめて読み取りをOFFにしました"); };
 $("plusPay").onchange = e => { plus().pay = e.target.checked; save(); };
 $("plusForm").onchange = e => { plus().form = e.target.checked; save(); };
+$("plusNeed").onchange = e => { plus().need = e.target.checked; save(); };
 $("plusLoan").onchange = e => { state.loanInTable = e.target.checked; save(); render(); };
 $("uiFont").onchange = e => { ui().font = e.target.value; save(); render(); };
 $("uiVert").onchange = e => { ui().vert = !!e.target.value; save(); render(); toast(ui().vert ? "表を縦表示にしました" : "表を横表示にしました"); };
@@ -2263,7 +2273,182 @@ function axisY(W, H, L, T, max) {
   return g;
 }
 const bar = (x, y, w, h, fill, tip, top = true) => h <= 0 ? "" : `<path d="M${x},${y + h}V${y + (top ? Math.min(4, h) : 0)}${top ? `q0,-${Math.min(4, h)} ${Math.min(4, w / 2)},-${Math.min(4, h)}h${w - 2 * Math.min(4, w / 2)}q${Math.min(4, w / 2)},0 ${Math.min(4, w / 2)},${Math.min(4, h)}` : `h${w}`}V${y + h}Z" fill="${fill}" data-tip="${esc(tip)}"/>`;
+// ===== 📅 来月の見通し（定期的に買う物・光熱費・ガソリン・固定費から、これから必要なお金を出す。AIは使わない） =====
+const NEED_UTIL = [
+  { k: "水道", re: /水道|下水/, ic: "🚰" },
+  { k: "電気", re: /電気|電力|でんき/, ic: "💡" },
+  { k: "ガス", re: /ガス(?!ト)|ｶﾞｽ/, ic: "🔥" },
+  { k: "ガソリン", re: /ガソリン|レギュラー|ハイオク|軽油|給油/, ic: "⛽", daily: true }
+];
+const NEED_MODE = { daily: "毎日", weekday: "平日だけ（月〜金）", weekend: "土日だけ", week: "1週間でまとめて" };
+const needSt = () => { state.need = state.need || {}; state.need.items = state.need.items || []; state.need.util = state.need.util || {}; return state.need; };
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dimOf = ym => new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate();
+function needPeriod(p) {
+  const t = new Date(), thisYm = todayStr().slice(0, 7);
+  const ym = p === "rest" ? thisYm : addMonth(thisYm, 1);
+  const s = p === "rest" ? new Date(t.getFullYear(), t.getMonth(), t.getDate()) : new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1);
+  const e = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0);
+  let days = 0, wd = 0;
+  for (const d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) { days++; const w = d.getDay(); if (w > 0 && w < 6) wd++; }
+  return { p, ym, thisYm, days, wd, we: days - wd, dim: dimOf(ym), from: ymd(s), to: ymd(e) };
+}
+const recItems = () => state.entries.filter(e => !e.bank && !e.fixed && !e.loan && !e.walletAdj).flatMap(e => (e.items || []).map(it => ({ e, it })));
+function needUses(n, P) { const q = Number(n.qty) || 0; return n.mode === "daily" ? q * P.days : n.mode === "weekday" ? q * P.wd : n.mode === "weekend" ? q * P.we : q * P.days / 7; }
+const needWeek = n => { const q = Number(n.qty) || 0; return n.mode === "daily" ? q * 7 : n.mode === "weekday" ? q * 5 : n.mode === "weekend" ? q * 2 : q; };
+function needBuys(n) {
+  const names = new Set(n.names || []);
+  const r = recItems().filter(x => names.has(x.it.name) && Number(x.it.price) > 0).sort((a, b) => a.e.date < b.e.date ? -1 : 1);
+  const dates = [...new Set(r.map(x => x.e.date))];
+  let gap = null; if (dates.length >= 2) gap = Math.round((new Date(dates[dates.length - 1]) - new Date(dates[0])) / 864e5 / (dates.length - 1));
+  return { last: r.length ? r[r.length - 1] : null, n: dates.length, gap };
+}
+const needPrice = n => Number(n.price) || (needBuys(n).last ? Number(needBuys(n).last.it.price) : 0);
+function needCycle(n) {
+  const w = needWeek(n), pk = Number(n.pack) || 1; if (!w) return "";
+  const r = x => Math.round(x * 10) / 10;
+  return w >= pk ? `1週間に約${r(w / pk)}${n.bag || "袋"}` : `約${r(pk / w)}週間に1${n.bag || "袋"}`;
+}
+// 光熱費・ガソリン：記録（固定費・通帳・手入力も）から、終わった月の平均（2か月分以上あるとき）
+function needUtil(u, P) {
+  const man = needSt().util[u.k];
+  const sums = {}, firstD = {};
+  allE().filter(e => !e.loan && !e.walletAdj).forEach(e => (e.items || []).forEach(it => {
+    if (u.k !== "ガソリン" && /ガソリン/.test(it.name || "")) return;
+    if (u.re.test(it.name || "") || (u.re.test(e.store || "") && (e.items || []).length === 1)) { const ym = e.date.slice(0, 7); sums[ym] = (sums[ym] || 0) + (Number(it.price) || 0); if (!firstD[ym] || e.date < firstD[ym]) firstD[ym] = e.date; }
+  }));
+  const lastDone = addMonth(P.thisYm, -1), from = addMonth(P.thisYm, -6);
+  const ms = Object.keys(sums).filter(k => k >= from && k <= lastDone).sort();
+  let avg = null, span = 0;
+  if (ms.length) { const [y0, m0] = ms[0].split("-").map(Number), [y1, m1] = lastDone.split("-").map(Number); span = (y1 - y0) * 12 + (m1 - m0) + 1; if (span >= 2) avg = ms.reduce((a, k) => a + sums[k], 0) / span; }
+  // ガソリンは毎週の出費なので、最初に入れた日から先月末までの1日あたりで出す（月の途中から記録を始めても少なくならない）
+  if (avg !== null && u.daily && firstD[ms[0]]) { const days = Math.round((new Date(+lastDone.slice(0, 4), +lastDone.slice(5, 7), 0) - new Date(firstD[ms[0]])) / 864e5) + 1; if (days >= 28) avg = ms.reduce((a, k) => a + sums[k], 0) / days * 30.4; }
+  const fx = (state.fixed || []).find(f => u.re.test(f.name));
+  let month = null, how = "";
+  if (man) { month = Number(man); how = "目安で入力"; }
+  else if (avg !== null) { month = avg; how = `記録${span}か月の平均`; }
+  else if (fx) { month = Number(fx.amount) || 0; how = "固定費の金額"; }
+  if (month === null) return { u, v: null, how: ms.length ? "記録が2か月分たまると出ます" : "記録がまだありません" };
+  const done = sums[P.thisYm] || 0;
+  let v = month;
+  if (P.p === "rest") v = u.daily ? month / P.dim * P.days : Math.max(0, month - done);
+  return { u, v, month, how: u.daily ? `${how}・週 約${yen(Math.round(month / dimOf(lastDone) * 7 / 10) * 10)}` : how };
+}
+function needFixed(P) {
+  const t = +todayStr().slice(8, 10);
+  return (state.fixed || []).filter(f => !NEED_UTIL.some(u => u.re.test(f.name))).filter(f => P.p !== "rest" || (!(state.fixedDone || {})[f.id + "|" + P.ym] && (Number(f.day) || 1) >= t));
+}
+function renderNeed() {
+  const body = $("needBody"); if (!body) return;
+  const p = ui().needP || "next";
+  [...$("needSeg").children].forEach(b => b.classList.toggle("on", b.dataset.p === p));
+  $("needSeg").classList.toggle("hidden", !plus().need);
+  if (!plus().need) {
+    body.innerHTML = `<p style="margin-top:0">定期的に買う物（例：冷凍コロッケを平日に1個）・光熱費・ガソリン代・固定費から、<b>来月いくら必要か</b>と、<b>節約しだいで残せるお金</b>を出します。</p>
+      <p class="note" style="margin:0">⭐ 来月の見通しは有料オプションです。テスト版のあいだは「⚙ 設定」の「⭐ 有料オプション」で使えるようになります。</p>
+      <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn sm main" id="needGo">設定を開く</button></div>`;
+    $("needGo").onclick = () => goPage("tpl");
+    return;
+  }
+  const P = needPeriod(p), N = needSt();
+  const lbl = p === "rest" ? `今月の残り（${md(P.from)}〜${md(P.to)}・${P.days}日）` : `${+P.ym.slice(5)}月（${md(P.from)}〜${md(P.to)}）`;
+  let tot = 0, h = `<p class="muted" style="margin:0 0 4px">${lbl}に、最低限いるお金の目安です。</p>`;
+  h += `<div class="nsec">🛒 定期的に買う物</div>`;
+  if (!N.items.length) h += `<p class="muted" style="margin:4px 0">まだありません。下の「＋ 定期的に買う物を追加」から、よく買う商品と使う量を入れてください。</p>`;
+  N.items.forEach(n => {
+    const uses = needUses(n, P), pk = Number(n.pack) || 1, packs = uses / pk, pr = needPrice(n), v = Math.round(packs * pr / 10) * 10; tot += v;
+    const b = needBuys(n), un = esc(n.unit || "個"), bg = esc(n.bag || "袋");
+    h += `<div class="nrow"><div class="nm"><b>${esc(n.label)}</b><small>${esc(NEED_MODE[n.mode] || "")}・${n.mode === "week" ? "1週間に" : "1日"}${esc(n.qty)}${un}（1${bg}${pk}${un}入り）→ ${needCycle(n)}${b.gap ? `<br>レシートでは平均${b.gap}日ごとに買っています` : ""}${pr ? "" : `<br><span style="color:var(--warn)">値段が分かりません（「直す」で入れてください）</span>`}</small></div>
+      <div class="v">${pr ? "約" + yen(v) : "−"}<small>約${Math.round(packs * 10) / 10}${bg}・1${bg}${yen(pr)}</small><button class="btn sm" data-nedit="${n.id}" style="margin-top:4px">直す</button></div></div>`;
+  });
+  h += `<div class="row" style="margin-top:6px"><button class="btn sm" id="needAdd">＋ 定期的に買う物を追加</button></div>`;
+  h += `<div class="nsec">💡 光熱費・ガソリン</div>`;
+  NEED_UTIL.forEach(u => {
+    const r = needUtil(u, P); if (r.v !== null) tot += Math.round(r.v);
+    h += `<div class="nrow"><div class="nm"><b>${u.ic} ${u.k}</b><small>${esc(r.how)}</small></div><div class="v">${r.v === null ? "−" : "約" + yen(Math.round(r.v / 10) * 10)}<button class="btn sm" data-nutil="${u.k}" style="display:block;margin:4px 0 0 auto">目安を入れる</button></div></div>`;
+  });
+  const fx = needFixed(P), fxs = fx.reduce((a, f) => a + (Number(f.amount) || 0), 0); tot += fxs;
+  h += `<div class="nsec">🔁 毎月の固定費</div><div class="nrow"><div class="nm"><b>${fx.length ? fx.map(f => esc(f.name)).join("・") : "なし"}</b><small>「⚙ 設定」の「🔁 毎月の固定費」から（光熱費は上で数えます）</small></div><div class="v">${yen(fxs)}</div></div>`;
+  h += `<div class="ntot"><span>合計（目安）</span><span>約${yen(Math.round(tot / 10) * 10)}</span></div>`;
+  // 残せるお金
+  const c = carryOf(P.thisYm), sv = saveOf(P.thisYm);
+  const base = p === "rest" ? c.v + incOf(P.thisYm) - sv - spendOf(P.thisYm) : incOf(P.thisYm);
+  const saveIn = p === "rest" ? 0 : sv;
+  if (base > 0) {
+    const left = base - tot - saveIn, W = x => Math.max(0, Math.min(100, x / base * 100)).toFixed(1) + "%";
+    h += `<p class="muted" style="margin:8px 0 0">${p === "rest" ? `いまの残り ${yen(base)} のうち` : `収入 ${yen(base)}（今月の収入をもとに）のうち`}</p>
+      <div class="nbar"><i style="width:${W(tot)};background:var(--warn)"></i>${saveIn ? `<i style="width:${W(saveIn)};background:var(--sub)"></i>` : ""}<i style="width:${W(Math.max(0, left))};background:var(--accent)"></i></div>
+      <div class="nleg"><span><b style="background:var(--warn)"></b>必要な支出</span>${saveIn ? `<span><b style="background:var(--sub)"></b>貯金 ${yen(saveIn)}</span>` : ""}<span><b style="background:var(--accent)"></b>節約しだいで残せる</span></div>
+      <div class="res" style="margin-top:6px"><span>節約しだいで残せるお金</span><span class="big" style="${left < 0 ? "color:var(--warn)" : ""}">${left < 0 ? "−" : ""}${yen(Math.abs(Math.round(left / 10) * 10))}</span></div>
+      ${left < 0 ? `<p class="err" style="margin:4px 0 0">必要な支出が${p === "rest" ? "いまの残り" : "収入"}を超えそうです。</p>` : ""}`;
+  } else h += `<p class="muted" style="margin:8px 0 0">「💰 収入・繰越」に給与などを入れると、<b>節約しだいで残せるお金</b>も出ます。</p>`;
+  h += `<p class="muted" style="margin:8px 0 0;font-size:12px">※ 目安です。家にまだ残っている分や、値上がりは入っていません。</p>`;
+  body.innerHTML = h;
+  $("needAdd").onclick = () => needEdit(null);
+  body.querySelectorAll("[data-nedit]").forEach(b => b.onclick = () => needEdit(N.items.find(x => x.id === b.dataset.nedit)));
+  body.querySelectorAll("[data-nutil]").forEach(b => b.onclick = () => needUtilEdit(b.dataset.nutil));
+}
+$("needSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; ui().needP = b.dataset.p; save(); renderNeed(); };
+function needUtilEdit(k) {
+  const N = needSt(), u = NEED_UTIL.find(x => x.k === k);
+  openPanel(`<h2>${u.ic} ${k}の目安</h2><p class="muted" style="margin-top:0">${u.daily ? "1か月にかかるガソリン代" : "1か月の" + k + "代"}の目安を入れてください。空にすると、記録（2か月分以上）から自動で出します。</p>
+    <input class="t" id="nuV" inputmode="numeric" placeholder="例：5000" value="${N.util[k] ? Number(N.util[k]).toLocaleString("ja-JP") : ""}">
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="nuNo">やめる</button><button class="btn main" id="nuOk">保存</button></div>`);
+  $("nuNo").onclick = () => closePanel();
+  $("nuOk").onclick = () => { const v = Number(($("nuV").value || "").replace(/[^\d]/g, "")); if (v) N.util[k] = v; else delete N.util[k]; save(); closePanel(); renderNeed(); };
+}
+function needEdit(n) {
+  const N = needSt(), isNew = !n;
+  const d = n ? JSON.parse(JSON.stringify(n)) : { id: uid(), label: "", names: [], pack: "", unit: "個", bag: "袋", mode: "weekday", qty: 1, price: "" };
+  const all = {}; recItems().forEach(({ e, it }) => { if (!it.name) return; const a = all[it.name] = all[it.name] || { n: 0, last: null }; a.n++; if (!a.last || a.last.date <= e.date) a.last = { date: e.date, price: it.price }; });
+  openPanel(`<h2>${isNew ? "定期的に買う物を追加" : "定期的に買う物を直す"}</h2>
+    <label class="f">商品名</label><input class="t" id="nfName" value="${esc(d.label)}" placeholder="例：冷凍コロッケ">
+    <p class="muted" style="margin:6px 0 0;font-size:12px">今までのレシートの品目から選ぶと、値段と買った間隔が分かります（名前がちがっても同じ商品なら、いくつ選んでもOK）。</p>
+    <div class="nfl" id="nfList"></div>
+    <div class="grid2" style="margin-top:6px">
+      <div><label class="f">1<span id="nfBagL">${esc(d.bag)}</span>に何<span id="nfUnitL">${esc(d.unit)}</span>入り</label><input class="t" id="nfPack" inputmode="numeric" value="${esc(d.pack)}" placeholder="例：10"></div>
+      <div><label class="f">数え方</label><div class="row" style="gap:4px;flex-wrap:nowrap"><select class="t" id="nfUnit">${["個", "枚", "本", "回分", "g"].map(x => `<option${x === d.unit ? " selected" : ""}>${x}</option>`).join("")}</select><select class="t" id="nfBag">${["袋", "箱", "パック", "本"].map(x => `<option${x === d.bag ? " selected" : ""}>${x}</option>`).join("")}</select></div></div>
+      <div><label class="f">使う日</label><select class="t" id="nfMode">${Object.entries(NEED_MODE).map(([k, v]) => `<option value="${k}"${k === d.mode ? " selected" : ""}>${v}</option>`).join("")}</select></div>
+      <div><label class="f" id="nfQtyL"></label><input class="t" id="nfQty" inputmode="decimal" value="${esc(d.qty)}"></div>
+      <div><label class="f">1<span id="nfBagL2">${esc(d.bag)}</span>の値段（円）</label><input class="t" id="nfPrice" inputmode="numeric" value="${esc(d.price)}"></div>
+    </div>
+    <p class="note" id="nfPrev" style="margin:10px 0 0"></p>
+    <div class="row" style="justify-content:flex-end;margin-top:10px">${isNew ? "" : `<button class="btn sm warn" id="nfDel">消す</button>`}<button class="btn" id="nfNo">やめる</button><button class="btn main" id="nfOk">保存</button></div>`);
+  const sel = new Set(d.names);
+  const list = () => {
+    const q = $("nfName").value.trim();
+    const ks = Object.keys(all).filter(k => sel.has(k) || (q && k.includes(q))).sort((a, b) => (sel.has(b) - sel.has(a)) || all[b].n - all[a].n).slice(0, 40);
+    $("nfList").innerHTML = ks.length ? ks.map(k => `<label><input type="checkbox" data-nn="${esc(k)}"${sel.has(k) ? " checked" : ""}>${esc(k)}<small>${all[k].n}回・前回${yen(all[k].last.price)}</small></label>`).join("") : `<p class="muted" style="margin:6px 0;font-size:13px">${q ? "同じ名前の品目は見つかりませんでした。値段を手で入れてください。" : "商品名を入れると、今までのレシートから探します。"}</p>`;
+    $("nfList").querySelectorAll("[data-nn]").forEach(c => c.onchange = () => { c.checked ? sel.add(c.dataset.nn) : sel.delete(c.dataset.nn); prev(); });
+  };
+  const read = () => Object.assign(d, { label: $("nfName").value.trim(), names: [...sel], pack: Number(($("nfPack").value || "").replace(/[^\d.]/g, "")) || "", unit: $("nfUnit").value, bag: $("nfBag").value, mode: $("nfMode").value, qty: Number(($("nfQty").value || "").replace(/[^\d.]/g, "")) || 0, price: Number(($("nfPrice").value || "").replace(/[^\d]/g, "")) || "" });
+  const prev = () => {
+    read();
+    $("nfQtyL").textContent = d.mode === "week" ? `1週間に使う数（${d.unit}）` : `1日に使う数（${d.unit}）`;
+    $("nfBagL").textContent = $("nfBagL2").textContent = d.bag; $("nfUnitL").textContent = d.unit;
+    const b = needBuys(d), lp = b.last ? Number(b.last.it.price) : 0;
+    $("nfPrice").placeholder = lp ? `${lp}（前回の値段）` : "例：298";
+    if (!d.pack || !d.qty) { $("nfPrev").textContent = "入り数と使う数を入れると、どのくらいで1" + d.bag + "なくなるか出ます。"; return; }
+    const P = needPeriod("next"), packs = needUses(d, P) / d.pack, pr = d.price || lp;
+    $("nfPrev").innerHTML = `1週間で${Math.round(needWeek(d) * 10) / 10}${esc(d.unit)}使う → <b>${needCycle(d)}</b>。${+P.ym.slice(5)}月は約${Math.round(packs * 10) / 10}${esc(d.bag)}${pr ? `・<b>約${yen(Math.round(packs * pr / 10) * 10)}</b>` : ""}${b.gap ? `<br>レシートでは平均${b.gap}日ごとに買っています` : ""}`;
+  };
+  $("nfName").oninput = () => { list(); prev(); };
+  ["nfPack", "nfQty", "nfPrice"].forEach(id => $(id).oninput = prev);
+  ["nfUnit", "nfBag", "nfMode"].forEach(id => $(id).onchange = prev);
+  list(); prev();
+  $("nfNo").onclick = () => closePanel();
+  if ($("nfDel")) $("nfDel").onclick = e => { if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = "もう一度押すと消えます"; return; } N.items = N.items.filter(x => x.id !== d.id); save(); closePanel(); renderNeed(); };
+  $("nfOk").onclick = () => {
+    read();
+    if (!d.label) d.label = d.names[0] || "";
+    if (!d.label) { toast("商品名を入れてください"); return; }
+    if (!d.pack || !d.qty) { toast("入り数と使う数を入れてください"); return; }
+    const i = N.items.findIndex(x => x.id === d.id); if (i >= 0) N.items[i] = d; else N.items.push(d);
+    save(); closePanel(); renderNeed(); toast("保存しました");
+  };
+}
 function renderCharts() {
+  renderNeed();
   const W = Math.max(280, $("chMonth").clientWidth || 320), L = 44, T = 8, B = 22;
   // 1) 月ごとの支出と収入（12か月）
   const ms = Array.from({ length: 12 }, (_, i) => addMonth(month, i - 11));
